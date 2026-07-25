@@ -1,0 +1,18 @@
+# Boundary-defining files. Changing any of these changes the architecture, so
+# they require architecture review. Feature work NEVER needs to touch them —
+# if a feature PR edits a file below, that is the signal to stop and review.
+#
+# Replace @your-org/architecture with your real team handle.
+
+/architecture.config.ts                                   @your-org/architecture
+/vite.config.ts                                           @your-org/architecture
+/apps/web/tsconfig.json                                   @your-org/architecture
+/apps/web/.dependency-cruiser.cjs                         @your-org/architecture
+/apps/web/.dependency-cruiser.generated.json              @your-org/architecture
+/apps/web/.oxlintrc.json                                  @your-org/architecture
+/apps/web/.dependency-cruiser-known-violations.json       @your-org/architecture
+/apps/web/tests/architecture.structure.test.ts            @your-org/architecture
+/apps/web/tests/architecture.config-consistency.test.ts   @your-org/architecture
+/scripts/                                                 @your-org/architecture
+/.github/workflows/ci.yml                                 @your-org/architecture
+/.github/CODEOWNERS                                       @your-org/architecture

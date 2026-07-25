@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# One workflow, failing on any step, fastest first.
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vite+ (vp)
+        run: |
+          curl -fsSL https://vite.plus | bash
+          echo "$HOME/.vite-plus/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies (frozen)
+        run: vp install --frozen-lockfile
+
+      # 1 — Oxlint. No warnings tier: everything is an error (the fast inner loop).
+      - name: Lint (oxlint)
+        run: vp lint
+
+      # 2 — vue-tsc. Where the @slices/@shared/@app alias boundaries are enforced.
+      - name: Typecheck (vue-tsc --noEmit)
+        run: vp run --filter @vise/web typecheck
+
+      # 3 — Vitest: unit rules, the filesystem structure test, and the
+      #     config-consistency test (generated configs match the source of truth).
+      - name: Test (vitest)
+        run: vp run --filter @vise/web test
+
+      # 4 — dependency-cruiser: allow-list mode + baseline (the load-bearing tool).
+      - name: Boundaries (dependency-cruiser, allow-list + --ignore-known)
+        run: vp run --filter @vise/web arch:depcruise
+
+      - name: Module-count floor (guard against a zero-parse false pass)
+        run: vp run --filter @vise/web arch:module-count
+
+      # 5 — The migration ratchet: the baseline only ever shrinks.
+      - name: Baseline did not grow
+        run: vp run --filter @vise/web arch:baseline:check
+
+      - name: Generated configs are in sync with architecture.config.ts
+        run: |
+          vp run --filter @vise/web arch:generate
+          git diff --exit-code -- apps/web/.dependency-cruiser.generated.json apps/web/.oxlintrc.json
+
+      # 6 — Prove every rule actually bites.
+      - name: Verify enforcement
+        run: vp run --filter @vise/web verify:enforcement
+
+      # 8 — Anti-loosening: boundary escape hatches must be a reviewed config
+      #     change, never an inline disable comment.
+      - name: No boundary-rule disable comments
+        run: vp run --filter @vise/web arch:no-disable

@@ -4,11 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ready": "vp fmt && vp lint && vp run test -r && vp run build -r",
-    "dev": "vp run website#dev",
+    "dev": "vp dev apps/web",
+    "build": "vp run -r build",
+    "fmt": "vp fmt",
+    "lint": "vp lint",
+    "check": "vp check",
+    "test": "vp run -r test",
+    "arch:generate": "vp run --filter ./apps/web arch:generate",
+    "arch:graph": "node scripts/render-graph.ts",
+    "verify:enforcement": "vp run --filter ./apps/web verify:enforcement",
+    "ready": "vp fmt && vp lint && vp run -r test && vp run -r build",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@viz-js/viz": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {

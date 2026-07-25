@@ -1,0 +1,207 @@
+{
+  "forbidden": [
+    {
+      "name": "slice-isolation",
+      "comment": "A slice may only reach another slice through its index.ts.",
+      "severity": "error",
+      "from": {
+        "path": "(^src/slices/)([^/]+)/"
+      },
+      "to": {
+        "path": "^$1",
+        "pathNot": "($1$2/|^src/slices/[^/]+/index\\.(ts|js)$)"
+      }
+    },
+    {
+      "name": "layers-point-down",
+      "comment": "core may not know about data or ui.",
+      "severity": "error",
+      "from": {
+        "path": "^src/slices/[^/]+/core/"
+      },
+      "to": {
+        "path": "^src/slices/[^/]+/(data|ui)/"
+      }
+    },
+    {
+      "name": "data-not-to-ui",
+      "comment": "data is IO + mapping; it never reaches into the UI.",
+      "severity": "error",
+      "from": {
+        "path": "^src/slices/[^/]+/data/"
+      },
+      "to": {
+        "path": "^src/slices/[^/]+/ui/"
+      }
+    },
+    {
+      "name": "core-is-framework-free",
+      "comment": "core/ may only use the npm allowlist (zod, date-fns, decimal.js).",
+      "severity": "error",
+      "from": {
+        "path": "^src/slices/[^/]+/core/"
+      },
+      "to": {
+        "dependencyTypes": [
+          "npm",
+          "npm-dev",
+          "npm-peer",
+          "npm-optional"
+        ],
+        "pathNot": "node_modules/(zod|date-fns|decimal\\.js)/"
+      }
+    },
+    {
+      "name": "dtos-stay-home",
+      "comment": "server shapes never escape data/.",
+      "severity": "error",
+      "from": {
+        "pathNot": "^src/slices/[^/]+/data/"
+      },
+      "to": {
+        "path": "^src/slices/[^/]+/data/dto\\."
+      }
+    },
+    {
+      "name": "shared-knows-nothing",
+      "comment": "shared/ is a global primitive layer; it imports no slice and no app code.",
+      "severity": "error",
+      "from": {
+        "path": "^src/shared/"
+      },
+      "to": {
+        "path": "^src/(slices|app)/"
+      }
+    },
+    {
+      "name": "app-is-a-leaf",
+      "comment": "the composition root is imported by nobody.",
+      "severity": "error",
+      "from": {
+        "pathNot": "^src/app/"
+      },
+      "to": {
+        "path": "^src/app/"
+      }
+    },
+    {
+      "name": "no-circular",
+      "comment": "circular dependencies make the graph un-reasoned-about.",
+      "severity": "error",
+      "from": {},
+      "to": {
+        "circular": true
+      }
+    },
+    {
+      "name": "no-orphans",
+      "comment": "every module is reachable from a slice, shared, or the app root.",
+      "severity": "error",
+      "from": {
+        "orphan": true,
+        "pathNot": [
+          "\\.d\\.ts$",
+          "(^|/)tsconfig\\.",
+          "\\.(json|css|svg|png)$",
+          "^src/app/main\\.ts$"
+        ]
+      },
+      "to": {}
+    }
+  ],
+  "allowed": [
+    {
+      "comment": "external packages",
+      "from": {},
+      "to": {
+        "dependencyTypes": [
+          "npm",
+          "npm-dev",
+          "npm-peer",
+          "npm-optional",
+          "core",
+          "type-only"
+        ]
+      }
+    },
+    {
+      "comment": "local non-source assets (css, images)",
+      "from": {},
+      "to": {
+        "path": "\\.(css|svg|png|json)$"
+      }
+    },
+    {
+      "comment": "intra-slice",
+      "from": {
+        "path": "^src/slices/([^/]+)/"
+      },
+      "to": {
+        "path": "^src/slices/$1/"
+      }
+    },
+    {
+      "comment": "cross-slice via public index",
+      "from": {
+        "path": "^src/(slices/[^/]+|app)/"
+      },
+      "to": {
+        "path": "^src/slices/[^/]+/index\\.ts$"
+      }
+    },
+    {
+      "comment": "core -> shared/lib",
+      "from": {
+        "path": "^src/slices/[^/]+/core/"
+      },
+      "to": {
+        "path": "^src/shared/lib/"
+      }
+    },
+    {
+      "comment": "slice (non-core) -> shared",
+      "from": {
+        "path": "^src/slices/[^/]+/(data|ui)/"
+      },
+      "to": {
+        "path": "^src/shared/"
+      }
+    },
+    {
+      "comment": "slice root files -> shared",
+      "from": {
+        "path": "^src/slices/[^/]+/(index|routes)\\.ts$"
+      },
+      "to": {
+        "path": "^src/shared/"
+      }
+    },
+    {
+      "comment": "app -> shared",
+      "from": {
+        "path": "^src/app/"
+      },
+      "to": {
+        "path": "^src/shared/"
+      }
+    },
+    {
+      "comment": "app -> app",
+      "from": {
+        "path": "^src/app/"
+      },
+      "to": {
+        "path": "^src/app/"
+      }
+    },
+    {
+      "comment": "shared -> shared",
+      "from": {
+        "path": "^src/shared/"
+      },
+      "to": {
+        "path": "^src/shared/"
+      }
+    }
+  ]
+}
