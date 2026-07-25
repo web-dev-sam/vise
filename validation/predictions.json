@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "author": "orchestrator",
+    "locked_before_dispatch": true,
+    "repo_head": "e15c5edd5a0084f08b6a4888d5cc19b0d8e09ce8",
+    "coordinate_scheme": "slice in {billing, scheduling, shared, app, <new-slice>}; layer in {core, data, ui, slice-root, primitives-ui, primitives-lib, primitives-http, app}",
+    "note": "Predictions are what I believe the constitution IMPLIES, derived from README constitution + rules 1-7 + existing code patterns. Contention notes flag where I expect subagents to disagree."
+  },
+  "predictions": [
+    {
+      "id": "R01",
+      "request": "Apply a discount code to an invoice, reduces the total.",
+      "files": [
+        { "path": "src/slices/billing/core/types.ts", "action": "modify", "coord": "billing/core" },
+        { "path": "src/slices/billing/core/rules.ts", "action": "modify", "coord": "billing/core" },
+        { "path": "src/slices/billing/data/dto.ts", "action": "modify", "coord": "billing/data" },
+        { "path": "src/slices/billing/data/mappers.ts", "action": "modify", "coord": "billing/data" },
+        { "path": "src/slices/billing/ui/components/InvoiceLinesTable.vue", "action": "modify", "coord": "billing/ui" }
+      ],
+      "coords": ["billing/core", "billing/data", "billing/ui"],
+      "contention": "LOW. README worked example #1 answers this near-verbatim. Answer key leaked in README.",
+      "leaked_in_readme": true
+    },
+    {
+      "id": "R02",
+      "request": "Backend renames invoice API fields; line items nested one level deeper.",
+      "files": [
+        { "path": "src/slices/billing/data/dto.ts", "action": "modify", "coord": "billing/data" },
+        { "path": "src/slices/billing/data/mappers.ts", "action": "modify", "coord": "billing/data" },
+        { "path": "src/slices/billing/data/mocks.ts", "action": "modify", "coord": "billing/data" }
+      ],
+      "coords": ["billing/data"],
+      "contention": "LOW. Pure DTO reshape; 'DTOs stay home'. Core/ui must NOT change. This is a containment guarantee, not a placement puzzle.",
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R03",
+      "request": "Date-range filter atop invoice list AND appointment day view, same look/behaviour.",
+      "files": [
+        { "path": "src/slices/billing/ui/components/DateRangeFilter.vue", "action": "create", "coord": "billing/ui" },
+        { "path": "src/slices/billing/ui/views/InvoiceListView.vue", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/billing/ui/composables/useInvoiceList.ts", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/scheduling/ui/components/DateRangeFilter.vue", "action": "create", "coord": "scheduling/ui" },
+        { "path": "src/slices/scheduling/ui/views/DayView.vue", "action": "modify", "coord": "scheduling/ui" },
+        { "path": "src/slices/scheduling/ui/composables/useDaySchedule.ts", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["billing/ui", "scheduling/ui"],
+      "contention": "HIGH. Genuine rule-7 vs worked-example-#3 conflict. Rule 7 + example-3 caveat say TWO usages => duplicate per slice (do NOT promote to shared until 3rd usage). But example #3 headline + 'same look/behaviour' tempts shared/ui/date-range-picker (primitives-ui). I predict duplication is the strictly-correct reading; I expect most subagents to pick shared/ui. This divergence is a primary finding.",
+      "alt_coords_expected": ["shared/primitives-ui"],
+      "leaked_in_readme": "partial (example #3 covers the picker but caveats promotion)"
+    },
+    {
+      "id": "R04",
+      "request": "Appointments show a coloured status label in day view, like invoices do.",
+      "files": [
+        { "path": "src/slices/scheduling/ui/components/AppointmentStatusBadge.vue", "action": "create", "coord": "scheduling/ui" },
+        { "path": "src/slices/scheduling/ui/components/AppointmentCard.vue", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["scheduling/ui"],
+      "contention": "LOW-MED. Mirrors billing's InvoiceStatusBadge (rule 5: about scheduling => scheduling slice). Trap: a shared StatusBadge would be a domain-aware primitive (rule-7 violation, Phase-2 adversarial item). Correct = scheduling/ui.",
+      "alt_coords_expected": ["shared/primitives-ui"],
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R05",
+      "request": "On invoice detail page, show the client's next upcoming appointment.",
+      "files": [
+        { "path": "src/slices/billing/ui/composables/useInvoiceDetail.ts", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/billing/ui/views/InvoiceDetailView.vue", "action": "modify", "coord": "billing/ui" }
+      ],
+      "coords": ["billing/ui"],
+      "contention": "LOW. README worked example #2 answers this. Uses @slices/scheduling public surface (fetchUpcomingAppointments already exported). scheduling/index.ts unchanged (field exists). Answer key leaked in README.",
+      "optional_coords": ["scheduling/slice-root"],
+      "leaked_in_readme": true
+    },
+    {
+      "id": "R06",
+      "request": "Reschedule shows new time immediately (optimistic), rolls back on server reject.",
+      "files": [
+        { "path": "src/slices/scheduling/ui/composables/useReschedule.ts", "action": "modify", "coord": "scheduling/ui" },
+        { "path": "src/slices/scheduling/ui/views/DayView.vue", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["scheduling/ui"],
+      "contention": "MED. Optimistic update = view-state concern => ui/composable. But 'a store is a cache with an IO habit => data/'; a subagent may introduce scheduling/data/store.ts. Scheduling has no store today. Predicted correct = scheduling/ui; data/ is the plausible divergence.",
+      "alt_coords_expected": ["scheduling/data"],
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R07",
+      "request": "Compliance audit log of every change to invoices and appointments (who, when, what).",
+      "files": [
+        { "path": "src/slices/audit/core/types.ts", "action": "create", "coord": "audit/core" },
+        { "path": "src/slices/audit/data/dto.ts", "action": "create", "coord": "audit/data" },
+        { "path": "src/slices/audit/data/mutations.ts", "action": "create", "coord": "audit/data" },
+        { "path": "src/slices/audit/index.ts", "action": "create", "coord": "audit/slice-root" },
+        { "path": "src/slices/audit/routes.ts", "action": "create", "coord": "audit/slice-root" },
+        { "path": "src/slices/billing/data/mutations.ts", "action": "modify", "coord": "billing/data" },
+        { "path": "src/slices/scheduling/data/mutations.ts", "action": "modify", "coord": "scheduling/data" }
+      ],
+      "coords": ["audit/core", "audit/data", "audit/slice-root", "billing/data", "scheduling/data"],
+      "contention": "VERY HIGH. Cross-cutting concern orthogonal to both axes. No rule adjudicates. Candidates: (a) new 'audit'/'compliance' slice invoked via public index by each slice's data/mutations; (b) app-level interceptor (but app is a leaf, imported by nobody -> cannot host a service slices call); (c) shared/ (blocked: domain-aware, rule 7); (d) each slice logs to its own data/ with a shared domain-free transport. 'who' (user identity) has no home. Expect wide scatter.",
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R08",
+      "request": "Statuses display in the user's language; launching German.",
+      "files": [
+        { "path": "src/shared/lib/i18n.ts", "action": "create", "coord": "shared/primitives-lib" },
+        { "path": "src/app/providers/i18n.ts", "action": "create", "coord": "app" },
+        { "path": "src/slices/billing/ui/components/InvoiceStatusBadge.vue", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/scheduling/ui/components/AppointmentCard.vue", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["shared/primitives-lib", "app", "billing/ui", "scheduling/ui"],
+      "contention": "VERY HIGH. i18n mechanism = domain-free primitive (shared/lib, like format.ts) + locale provider (app). But message catalogs contain domain nouns (invoice/appointment status labels) => must live per-slice ui, NOT shared (rule 7). Where catalogs live and whether status->label mapping moves out of the badges is unresolved. Expect scatter across shared/app/per-slice.",
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R09",
+      "request": "Only 'finance' role can void an invoice; others don't see the button.",
+      "files": [
+        { "path": "src/slices/billing/core/policy.ts", "action": "modify", "coord": "billing/core" },
+        { "path": "src/slices/billing/ui/composables/useInvoiceDetail.ts", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/billing/ui/views/InvoiceDetailView.vue", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/app/providers/currentUser.ts", "action": "create", "coord": "app" }
+      ],
+      "coords": ["billing/core", "billing/ui", "app"],
+      "contention": "VERY HIGH. authz cross-cutting. void is billing (canVoid in billing/core/policy). Permission-to-void as a pure rule can extend billing/core/policy (role passed in). But 'current user + role' has no home: candidates app/providers, a new 'auth' slice, or shared (blocked: domain-ish). Whether canVoid takes a role or a separate guard exists is unresolved.",
+      "alt_coords_expected": ["auth/core", "auth/data", "shared/primitives-lib"],
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R10",
+      "request": "Turn the reschedule flow on/off per customer without deploying (feature flags).",
+      "files": [
+        { "path": "src/shared/lib/featureFlags.ts", "action": "create", "coord": "shared/primitives-lib" },
+        { "path": "src/app/providers/featureFlags.ts", "action": "create", "coord": "app" },
+        { "path": "src/slices/scheduling/ui/views/DayView.vue", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["shared/primitives-lib", "app", "scheduling/ui"],
+      "contention": "VERY HIGH. Feature-flag mechanism = domain-free => shared/lib OR app/providers. Per-customer evaluation needs customer context. Gating the reschedule button => scheduling/ui. shared-vs-app for the flag service is the split; some may put a flags store in data/ of a slice.",
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R11",
+      "request": "Billing periods: named date range grouping appointments + invoices, totals per period.",
+      "files": [
+        { "path": "src/slices/billing-periods/core/types.ts", "action": "create", "coord": "billing-periods/core" },
+        { "path": "src/slices/billing-periods/core/rules.ts", "action": "create", "coord": "billing-periods/core" },
+        { "path": "src/slices/billing-periods/data/queries.ts", "action": "create", "coord": "billing-periods/data" },
+        { "path": "src/slices/billing-periods/ui/views/PeriodView.vue", "action": "create", "coord": "billing-periods/ui" },
+        { "path": "src/slices/billing-periods/index.ts", "action": "create", "coord": "billing-periods/slice-root" },
+        { "path": "src/slices/billing-periods/routes.ts", "action": "create", "coord": "billing-periods/slice-root" }
+      ],
+      "coords": ["billing-periods/core", "billing-periods/data", "billing-periods/ui", "billing-periods/slice-root"],
+      "contention": "VERY HIGH. New cross-slice business capability spanning billing + scheduling. Candidates: (a) new slice composing both via public indexes; (b) app/views (but constitution says ClientOverviewView is 'the ONLY cross-slice composition view'); (c) fold into billing (but it needs scheduling data). Slice name and whether it lives inside billing are contested. This tests domain-slice fit.",
+      "alt_coords_expected": ["app", "billing/core", "billing/data", "billing/ui"],
+      "leaked_in_readme": false
+    },
+    {
+      "id": "R12",
+      "request": "Search box on both list views, filters-as-you-type without hammering the server.",
+      "files": [
+        { "path": "src/slices/billing/ui/views/InvoiceListView.vue", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/billing/ui/composables/useInvoiceList.ts", "action": "modify", "coord": "billing/ui" },
+        { "path": "src/slices/scheduling/ui/views/DayView.vue", "action": "modify", "coord": "scheduling/ui" },
+        { "path": "src/slices/scheduling/ui/composables/useDaySchedule.ts", "action": "modify", "coord": "scheduling/ui" }
+      ],
+      "coords": ["billing/ui", "scheduling/ui"],
+      "contention": "MED. useDebounce already exists in shared/lib (reuse, no modify). Two list views => per-slice ui filter wiring. Rule 7: search input is 2 usages => duplicate, not shared. Divergence: a shared/ui SearchInput primitive; or reading 'without hammering the server' as server-side (data/ query change).",
+      "alt_coords_expected": ["shared/primitives-ui", "billing/data", "scheduling/data"],
+      "leaked_in_readme": false
+    }
+  ]
+}
