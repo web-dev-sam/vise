@@ -187,6 +187,74 @@ const cases: readonly EnforcementCase[] = [
     files: [{ path: "slices/billing/utils/__violation.ts", content: `export const junk = 1;\n` }],
     cleanupDirs: ["slices/billing/utils"],
   },
+  {
+    rule: "public-index-no-relaunder (a slice index re-exporting another slice)",
+    checker: "depcruise",
+    expect: /public-index-no-relaunder/,
+    files: [
+      {
+        path: "slices/__relaunder__/index.ts",
+        content: `export { billingRoutes } from "@slices/billing";\n`,
+      },
+    ],
+    cleanupDirs: ["slices/__relaunder__"],
+  },
+  {
+    rule: "core-stays-framework-free (core reaching vue via a shared/lib re-export)",
+    checker: "depcruise",
+    expect: /core-stays-framework-free/,
+    files: [
+      { path: "shared/lib/__reactive.ts", content: `export { ref } from "vue";\n` },
+      {
+        path: "slices/billing/core/__violation.ts",
+        content: `import { ref } from "../../../shared/lib/__reactive";\nexport const x = ref;\n`,
+      },
+    ],
+  },
+  {
+    rule: "computed dynamic import (import() with a non-literal specifier)",
+    checker: "structure",
+    expect: /non-literal specifier/,
+    files: [
+      {
+        path: "slices/billing/ui/composables/__violation.ts",
+        content: "export async function load(name: string) {\n  return import(`@slices/${name}`);\n}\n",
+      },
+    ],
+  },
+  {
+    rule: "core purity (core/ reading the wall clock)",
+    checker: "structure",
+    expect: /core\/ is pure/,
+    files: [
+      {
+        path: "slices/billing/core/__violation.ts",
+        content: `export const stamp = () => new Date().toISOString();\n`,
+      },
+    ],
+  },
+  {
+    rule: "store outside data/ (a Pinia store in app/providers)",
+    checker: "structure",
+    expect: /defineStore/,
+    files: [
+      {
+        path: "app/providers/__violation.ts",
+        content: `import { defineStore } from "pinia";\nexport const useX = defineStore("x", () => ({}));\n`,
+      },
+    ],
+  },
+  {
+    rule: "server shape outside dto.ts (inline snake_case type in data/)",
+    checker: "structure",
+    expect: /snake_case type member/,
+    files: [
+      {
+        path: "slices/billing/data/__violation.ts",
+        content: `export interface RawThing {\n  thing_id: string;\n  created_at: string;\n}\nexport const raw: RawThing = { thing_id: "1", created_at: "z" };\n`,
+      },
+    ],
+  },
 ];
 
 function plant(files: readonly PlantedFile[]): void {

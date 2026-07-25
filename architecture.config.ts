@@ -48,6 +48,19 @@ export const coreNpmAllowlist = ["zod", "date-fns", "decimal.js"] as const;
 /** Directory names that mean "nobody knew where this goes". */
 export const bannedDirectoryNames = ["utils", "helpers", "misc", "common", "stores"] as const;
 
+/**
+ * Expressions core/ may never contain. A clock or randomness makes a domain
+ * rule non-deterministic and untestable — pass `now`/`today` in as an argument
+ * instead (constitution rule 4, purity corollary). The structure test greps
+ * every core file in every slice for these.
+ */
+export const coreImpurityTokens = [
+  "new Date(",
+  "Date.now(",
+  "Math.random(",
+  "performance.now(",
+] as const;
+
 /* -------------------------------------------------------------------------- */
 /* Helper-question messages — every restriction explains WHY, as a question.  */
 /* -------------------------------------------------------------------------- */
@@ -234,6 +247,22 @@ export function buildForbiddenRules(): DepcruiseRule[] {
         ],
       },
       to: {},
+    },
+    {
+      name: "public-index-no-relaunder",
+      comment:
+        "A slice's public index.ts may not re-export another slice — that launders a sideways dependency through your public surface. Import the other slice where you use it, via @slices/<slice>, so the coupling is visible at the use-site.",
+      severity: "error",
+      from: { path: "^src/slices/([^/]+)/index\\.ts$" },
+      to: { path: "^src/slices/[^/]+/index\\.ts$", pathNot: "^src/slices/$1/" },
+    },
+    {
+      name: "core-stays-framework-free",
+      comment:
+        "core/ must not even TRANSITIVELY reach the framework (e.g. via a shared/lib module that itself imports vue). Framework-freeness is a reachability property, not a direct-edge one.",
+      severity: "error",
+      from: { path: "^src/slices/[^/]+/core/" },
+      to: { path: "node_modules/(vue|vue-router|pinia|@vue)/", reachable: true },
     },
   ];
 }

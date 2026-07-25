@@ -2,9 +2,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "boundaries: check this file",
+      "label": "check file",
       "type": "shell",
       "command": "node scripts/depcruise-vscode.mjs \"${file}\"",
+      "icon": {
+        "id": "shield",
+        "color": "terminal.ansiYellow"
+      },
       "problemMatcher": {
         "owner": "depcruise",
         "source": "dependency-cruiser",
@@ -29,9 +33,13 @@
       "group": "test"
     },
     {
-      "label": "boundaries: check everything",
+      "label": "check all",
       "type": "shell",
       "command": "node scripts/depcruise-vscode.mjs",
+      "icon": {
+        "id": "verified",
+        "color": "terminal.ansiYellow"
+      },
       "problemMatcher": {
         "owner": "depcruise",
         "source": "dependency-cruiser",
@@ -54,9 +62,13 @@
       }
     },
     {
-      "label": "boundaries: graph around this file",
+      "label": "graph",
       "type": "shell",
       "command": "node scripts/depcruise-focus.mjs \"${file}\"",
+      "icon": {
+        "id": "type-hierarchy",
+        "color": "terminal.ansiYellow"
+      },
       "presentation": {
         "reveal": "silent",
         "panel": "shared",
@@ -65,9 +77,16 @@
       "problemMatcher": []
     },
     {
-      "label": "typecheck: watch",
+      "label": "watch",
       "type": "shell",
-      "command": "npx vue-tsc --noEmit --watch --pretty false",
+      "command": "vp exec vue-tsc --noEmit --watch --pretty false",
+      "options": {
+        "cwd": "${workspaceFolder}/apps/web"
+      },
+      "icon": {
+        "id": "eye",
+        "color": "terminal.ansiBlue"
+      },
       "isBackground": true,
       "runOptions": {
         "runOn": "folderOpen"
@@ -80,7 +99,7 @@
         "owner": "vue-tsc",
         "fileLocation": [
           "relative",
-          "${workspaceFolder}"
+          "${workspaceFolder}/apps/web"
         ],
         "pattern": {
           "regexp": "^(.+?)\\((\\d+),(\\d+)\\): (error|warning) (TS\\d+): (.*)$",
@@ -99,9 +118,13 @@
       }
     },
     {
-      "label": "new: file (asks the helper questions)",
+      "label": "new file",
       "type": "shell",
-      "command": "npx plop file",
+      "command": "pnpm exec plop file",
+      "icon": {
+        "id": "new-file",
+        "color": "terminal.ansiGreen"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -110,9 +133,13 @@
       "problemMatcher": []
     },
     {
-      "label": "new: slice",
+      "label": "new slice",
       "type": "shell",
-      "command": "npx plop slice",
+      "command": "pnpm exec plop slice",
+      "icon": {
+        "id": "new-folder",
+        "color": "terminal.ansiGreen"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -121,13 +148,17 @@
       "problemMatcher": []
     },
     {
-      "label": "architecture: full check (what CI runs)",
+      "label": "CI",
+      "icon": {
+        "id": "run-all",
+        "color": "terminal.ansiMagenta"
+      },
       "dependsOrder": "sequence",
       "dependsOn": [
         "_lint",
         "_typecheck",
         "_test",
-        "boundaries: check everything",
+        "check all",
         "_enforcement"
       ],
       "problemMatcher": []
@@ -135,7 +166,11 @@
     {
       "label": "_lint",
       "type": "shell",
-      "command": "npx oxlint --deny-warnings",
+      "command": "vp lint",
+      "icon": {
+        "id": "sparkle",
+        "color": "terminal.ansiCyan"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared"
@@ -145,7 +180,11 @@
     {
       "label": "_typecheck",
       "type": "shell",
-      "command": "npx vue-tsc --noEmit",
+      "command": "vp run --filter @vise/web typecheck",
+      "icon": {
+        "id": "symbol-ruler",
+        "color": "terminal.ansiBlue"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared"
@@ -155,7 +194,11 @@
     {
       "label": "_test",
       "type": "shell",
-      "command": "npx vitest run",
+      "command": "vp run -r test",
+      "icon": {
+        "id": "beaker",
+        "color": "terminal.ansiGreen"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared"
@@ -165,7 +208,11 @@
     {
       "label": "_enforcement",
       "type": "shell",
-      "command": "npm run verify:enforcement",
+      "command": "vp run --filter @vise/web verify:enforcement",
+      "icon": {
+        "id": "law",
+        "color": "terminal.ansiMagenta"
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared"

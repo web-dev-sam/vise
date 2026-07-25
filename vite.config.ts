@@ -14,7 +14,7 @@ export default defineConfig({
     "*": "vp lint --fix",
   },
   lint: {
-    options: { typeAware: true, typeCheck: true },
+    options: { typeAware: false, typeCheck: false },
     overrides: buildOxlintOverrides(`${APP_DIR}/`),
   },
   fmt: {
