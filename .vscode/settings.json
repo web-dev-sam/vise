@@ -1,0 +1,87 @@
+{
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "oxc.enable": true,
+  "oxc.fmt.configPath": "./vite.config.ts",
+  "oxc.requireConfig": true,
+  "oxc.typeAware": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit"
+  },
+  "js/ts.preferences.autoImportFileExcludePatterns": [
+    "**/slices/*/core/**",
+    "**/slices/*/data/**",
+    "**/slices/*/ui/**"
+  ],
+  "js/ts.preferences.importModuleSpecifier": "project-relative",
+  "js/ts.preferences.importModuleSpecifierEnding": "minimal",
+  "js/ts.preferences.preferTypeOnlyAutoImports": true,
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "workbench.editor.labelFormat": "medium",
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.vue": "$(capture).spec.ts, $(capture).stories.ts",
+    "*.ts": "$(capture).spec.ts, $(capture).test.ts",
+    "index.ts": "routes.ts"
+  },
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.filePath": "on",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/.dependency-cruiser-known-violations.json": true,
+    "**/validation/**": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/validation/**": true
+  },
+  "tailwindCSS.classAttributes": [
+    "class",
+    "className",
+    "ngClass",
+    "wrapperClass",
+    "contentClass",
+    "labelClass",
+    "inputClass"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "cva\\(([^)]*)\\)",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ],
+    [
+      "cx\\(([^)]*)\\)",
+      "(?:'|\"|`)([^']*)(?:'|\"|`)"
+    ],
+    [
+      "tv\\(([^)]*)\\)",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ]
+  ],
+  "tailwindCSS.includeLanguages": {
+    "vue": "html",
+    "vue-html": "html"
+  },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.tabSize": 2,
+  "workbench.editor.customLabels.patterns": {
+    "**/.dependency-cruiser.cjs": "⚠ boundaries (CODEOWNERS)",
+    "**/.oxlintrc.json": "⚠ lint config (generated — edit architecture.config.ts)",
+    "**/architecture.config.ts": "⚠ architecture source of truth"
+  }
+}

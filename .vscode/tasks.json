@@ -1,0 +1,176 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "boundaries: check this file",
+      "type": "shell",
+      "command": "node scripts/depcruise-vscode.mjs \"${file}\"",
+      "problemMatcher": {
+        "owner": "depcruise",
+        "source": "dependency-cruiser",
+        "fileLocation": [
+          "absolute"
+        ],
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning|info)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "revealProblems": "onProblem",
+        "panel": "shared",
+        "clear": true
+      },
+      "group": "test"
+    },
+    {
+      "label": "boundaries: check everything",
+      "type": "shell",
+      "command": "node scripts/depcruise-vscode.mjs",
+      "problemMatcher": {
+        "owner": "depcruise",
+        "source": "dependency-cruiser",
+        "fileLocation": [
+          "absolute"
+        ],
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning|info)\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "boundaries: graph around this file",
+      "type": "shell",
+      "command": "node scripts/depcruise-focus.mjs \"${file}\"",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "typecheck: watch",
+      "type": "shell",
+      "command": "npx vue-tsc --noEmit --watch --pretty false",
+      "isBackground": true,
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "never",
+        "panel": "dedicated"
+      },
+      "problemMatcher": {
+        "owner": "vue-tsc",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+?)\\((\\d+),(\\d+)\\): (error|warning) (TS\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\s*(Starting compilation|File change detected)",
+          "endsPattern": "^\\s*Found \\d+ errors?\\."
+        }
+      }
+    },
+    {
+      "label": "new: file (asks the helper questions)",
+      "type": "shell",
+      "command": "npx plop file",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "new: slice",
+      "type": "shell",
+      "command": "npx plop slice",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "architecture: full check (what CI runs)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "_lint",
+        "_typecheck",
+        "_test",
+        "boundaries: check everything",
+        "_enforcement"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "_lint",
+      "type": "shell",
+      "command": "npx oxlint --deny-warnings",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "_typecheck",
+      "type": "shell",
+      "command": "npx vue-tsc --noEmit",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "_test",
+      "type": "shell",
+      "command": "npx vitest run",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "_enforcement",
+      "type": "shell",
+      "command": "npm run verify:enforcement",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
