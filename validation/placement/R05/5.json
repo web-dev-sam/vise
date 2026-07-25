@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Add the canonical cross-slice call fetchUpcomingAppointments(invoice.clientId, now) via the @slices/scheduling public alias and expose the first summary as nextAppointment; mirrors the existing pattern in useInvoiceList.ts."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Consume nextAppointment from the composable and render a small 'next upcoming appointment' block (date via shared formatDate), with an empty state when none."
+    }
+  ],
+  "uncertain": [
+    "Whether to add a dedicated NextAppointmentPanel component. Per README rule 5/example #2 it should render inline in the billing view first; if it grows it belongs to scheduling/ui exposed via that slice's index.ts, and must never be copied into billing/ui/components. So I'm deliberately NOT creating a component now, but that's a judgment call.",
+    "Whether a test belongs here. Existing tests (apps/web/tests/*.core.test.ts, *.mappers.test.ts) cover only framework-free core/mappers logic; there is no precedent for testing ui/ composables or views, and this change adds no core rule or mapper. I'd add coverage only if the team wants it, likely as a composable test under apps/web/tests/.",
+    "No change to scheduling/index.ts or scheduling/data/queries.ts is needed \u2014 fetchUpcomingAppointments + AppointmentSummary are already on the public surface. README example #2 hedged 'possibly scheduling/index.ts if a new read-model field is needed'; it isn't, but I flag it in case the team wants extra fields (e.g. resource/staff name) surfaced."
+  ],
+  "questions": [
+    "Where should 'now' come from? fetchUpcomingAppointments(clientId, now) requires a clock. The codebase convention (README + fetchUnpaidInvoiceSummaries) is that the composition root/caller supplies the Date deterministically, never read inside a rule/query. Should the composable inject an injected/prop clock, or is calling new Date() inside the billing composable acceptable here?",
+    "'Next upcoming appointment' is singular \u2014 show only the first (soonest scheduled) summary, and what should the UI display when the client has no upcoming scheduled appointment (hide the block vs. 'No upcoming appointments')?",
+    "Which appointment fields should the panel show \u2014 just start date/time, or also duration/resource? AppointmentSummary carries start/end/durationMinutes/resourceId but no human-readable resource/staff name, so showing 'who/where' would require a new read-model field on scheduling's public surface."
+  ]
+}

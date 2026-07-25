@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "The DTO is the server shape; apply the field renames and the deeper line-item nesting to invoiceDtoSchema/invoiceLineDtoSchema here \u2014 this is the only place the wire format is described."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "toInvoice/toInvoiceDto must read/write the renamed keys and reach one level deeper for lines, so core entities are unchanged and the mapper absorbs the API change."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "The MSW seed data is hand-written in server shape (typed as InvoiceDto) and must match the new field names and nesting or it will fail zod validation in queries."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Its inline InvoiceDto fixture and round-trip assertions encode the old server shape and must be updated to the new one to keep proving the mapping."
+    }
+  ],
+  "uncertain": [
+    "Whether the void mutation's mock response in mocks.ts (spreads a found invoice, sets status:3) needs any change \u2014 it should be covered by editing mocks.ts, but only if the renamed fields include 'status' or the nesting affects how a full invoice is echoed back.",
+    "I list only data/ + the mapper test on the assumption the renames are purely on the wire (server-side) and business meaning is unchanged; if a rename reflects a genuine domain concept change, core/types.ts, rules.ts, and the ui would also move \u2014 but that would be a different request than 'the API is changing'."
+  ],
+  "questions": [
+    "What exactly is the new nesting for line items \u2014 e.g. lines -> line_items.items[], or grouped under a per-currency/section object? The mapper change depends on the precise new path.",
+    "What is the full old-name -> new-name mapping for the renamed fields (and do any change type/units, not just their key)?",
+    "Is this a breaking cutover or a versioned/dual-shape rollout? If the backend will serve both old and new for a window, we may need the schema to accept both (union) rather than a hard swap.",
+    "Does the renamed/nested payload apply to all three endpoints (GET list, GET by id, PATCH void response) identically, so mocks.ts covers every case?"
+  ]
+}

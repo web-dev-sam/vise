@@ -1,0 +1,77 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/identity/core/types.ts",
+      "action": "create",
+      "why": "Framework-free Role union (incl. \"finance\") and CurrentUser type \u2014 the identity taxonomy no slice currently owns."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/dto.ts",
+      "action": "create",
+      "why": "Zod DTO for the current-user/session endpoint, kept private to data/ per the DTO-stays-home rule."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/mappers.ts",
+      "action": "create",
+      "why": "Map the current-user DTO to the core CurrentUser so DTO shapes never leak upward."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/queries.ts",
+      "action": "create",
+      "why": "fetchCurrentUser via shared httpTransport \u2014 the IO that supplies the caller's role."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handler returning a mock current user with a role, since the app is MSW-mocked and no auth backend exists."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/store.ts",
+      "action": "create",
+      "why": "Cached reactive session state (current user/role) \u2014 shared across views, so a data/ store like billing's."
+    },
+    {
+      "path": "apps/web/src/slices/identity/ui/composables/useCurrentUser.ts",
+      "action": "create",
+      "why": "Expose the current user's role reactively to feature UI without leaking data/ internals."
+    },
+    {
+      "path": "apps/web/src/slices/identity/routes.ts",
+      "action": "create",
+      "why": "Required 5th slice entry; exports an (empty) route list re-exported by index.ts per the structure test."
+    },
+    {
+      "path": "apps/web/src/slices/identity/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: Role type, useCurrentUser, identityMockHandlers, identityRoutes."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Gate canVoidInvoice on finance role via the @slices/identity public alias, combined with existing canVoid(invoice) \u2014 the documented cross-slice pattern."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Register identityMockHandlers so the current-user endpoint is served in dev/test."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate identityRoutes for consistency with how every slice's routes are composed (even if empty)."
+    }
+  ],
+  "uncertain": [
+    "Home for current-user/role: I placed it in a new `identity` slice (matches \"everything lives in a slice\" and the worked-example-2 cross-slice consumption pattern), but it could defensibly live in `shared/` as cross-cutting infrastructure like httpTransport, or in an `app/` provider. No precedent exists, so this is a real architecture-review call and drives most of the file list.",
+    "Where the finance gate lives: I kept it in billing/ui/composables/useInvoiceDetail.ts (composing existing canVoid + role), which keeps billing/core free of a cross-slice dependency. The alternative \u2014 extend billing/core/policy.ts to canVoid(invoice, role) for purity \u2014 would pull the identity Role type sideways into core, which feels like a layering smell.",
+    "Shape of the current-user source: a data/ store (session cache) vs a load-once composable/query. I chose a store since role is app-wide shared state, but the README notes stores are deliberately rare.",
+    "Whether app/router/index.ts truly needs identityRoutes: the identity slice has no pages, but index.ts must still re-export routes.ts to satisfy the structure test, so the export exists regardless."
+  ],
+  "questions": [
+    "Where does the current user's role actually come from? There is no auth/session/login anywhere today \u2014 is there a real backend endpoint, JWT, or SSO to read, or should this stay MSW-mocked for now?",
+    "Is hiding the button sufficient, or must voiding also be enforced server-side? Client-only hiding is not security \u2014 should the void mutation / MSW handler reject non-finance callers too?",
+    "Can a user hold multiple roles or is there a hierarchy (e.g. admin implies finance), or is it a single exact-match role?",
+    "For non-finance users, hide the button entirely (as requested) or render it disabled with a tooltip?",
+    "Is introducing a first identity/auth concept (a whole new slice) acceptable scope for this request, given CODEOWNERS-protected structure/consistency tests will gate a new slice?"
+  ]
+}

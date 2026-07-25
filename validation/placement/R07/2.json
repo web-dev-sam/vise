@@ -1,0 +1,107 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/audit/core/types.ts",
+      "action": "create",
+      "why": "Framework-free AuditEntry entity (actor, timestamp, entityType, entityId, field-level before/after changes) \u2014 the compliance record as a pure domain model."
+    },
+    {
+      "path": "apps/web/src/slices/audit/core/rules.ts",
+      "action": "create",
+      "why": "Pure helpers to compute/normalise the 'what changed' field-diff between a before and after snapshot (delete Vue and it still holds)."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/dto.ts",
+      "action": "create",
+      "why": "Server shape (snake_case/ISO) + zod schema for an audit-log record; never escapes data/."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mappers.ts",
+      "action": "create",
+      "why": "Map the audit DTO to/from the core AuditEntry so DTOs stay in data/."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/queries.ts",
+      "action": "create",
+      "why": "fetchAuditTrail (all / by entity) from /api/audit-log for the compliance view."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mutations.ts",
+      "action": "create",
+      "why": "recordChange(): POST a change record to /api/audit-log, called by other slices' mutations."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handlers + in-memory store for the audit-log endpoints, composed by the app's msw bootstrap."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/views/AuditLogView.vue",
+      "action": "create",
+      "why": "Compliance-facing view rendering who/when/what for every recorded change."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/composables/useAuditLog.ts",
+      "action": "create",
+      "why": "View state (load/filter the audit trail) assembling core + data for the view."
+    },
+    {
+      "path": "apps/web/src/slices/audit/routes.ts",
+      "action": "create",
+      "why": "This slice's /audit route definition, concatenated by the app router."
+    },
+    {
+      "path": "apps/web/src/slices/audit/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: recordChange, fetchAuditTrail, AuditEntry type, auditRoutes, auditMockHandlers."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mutations.ts",
+      "action": "modify",
+      "why": "After voidInvoice succeeds, call recordChange via @slices/audit (public index) to log the invoice change."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mutations.ts",
+      "action": "modify",
+      "why": "After rescheduleAppointment succeeds, call recordChange via @slices/audit to log the appointment change."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add 'audit' to the slices array (and 'audit'/'compliance' to domainNouns) \u2014 the single source of truth the whole toolchain and structure test derive from; CODEOWNERS-protected, needs architecture review."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate auditRoutes into the app route table."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose auditMockHandlers into the MSW worker so the audit-log API is served."
+    },
+    {
+      "path": "apps/web/src/app/layouts/DefaultLayout.vue",
+      "action": "modify",
+      "why": "Add a nav link to the audit/compliance view."
+    },
+    {
+      "path": "apps/web/tests/audit.core.test.ts",
+      "action": "create",
+      "why": "Unit-test the core change-diff rules, matching the per-slice *.core.test.ts convention."
+    }
+  ],
+  "uncertain": [
+    "Recording placement: the data/ mutations only receive an id, so the true 'before' snapshot lives in the ui composables (useInvoiceDetail.ts holds the invoice, useReschedule.ts holds the old start/end). Capturing a real before/after diff may mean calling recordChange from those composables (or widening the mutation signatures) rather than inside data/mutations.ts \u2014 this is my least-certain call.",
+    "Slice vs shared: I made audit its own slice because compliance is a distinct reason-to-change spanning both domains, but an audit trail that reaches into two domains slightly strains the 'near-total silo' model; a case exists for each slice owning its own trail instead.",
+    "Whether core/rules.ts is warranted or core is just types.ts \u2014 depends on how much real change-diff/formatting logic exists.",
+    "Whether the client should emit records at all: in a real backend the server owns the audit trail and the frontend only reads it, which would drop the mutations edits + audit/data/mutations.ts and leave only queries + the view."
+  ],
+  "questions": [
+    "'Who did it' has no source: there is no auth/user/actor/session concept anywhere in the codebase. Where does the current user's identity come from, and should an identity/session slice (or app-level provider) be introduced before this?",
+    "Is the audit trail authored server-side (real backend) or must the client emit each record? MSW is the only 'API' here, which changes whether the mutations/mocks edits are needed.",
+    "Scope of 'what changed': today only invoice-void and appointment-reschedule mutations exist. Should audit cover just these, or every future mutation (needs a general recording pattern), and does compliance need full field-level before/after diffs or just an action label + timestamp?",
+    "Should the compliance view be access-controlled / route-guarded, and where would that guard live given there's no auth?",
+    "Adding a slice edits CODEOWNERS-protected files (architecture.config.ts, and effectively router/msw composition) \u2014 is architecture review expected as part of this feature, or should the trail be shoehorned into existing slices to avoid that?"
+  ]
+}

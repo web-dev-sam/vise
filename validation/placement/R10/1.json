@@ -1,0 +1,67 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/data/dto.ts",
+      "action": "modify",
+      "why": "Add the snake_case server DTO schema for the per-customer reschedule flag response (DTOs must stay in data/)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mappers.ts",
+      "action": "modify",
+      "why": "Map the flag DTO into a plain core boolean so the DTO never leaks upward."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add fetchRescheduleEnabled(clientId) that reads the flag via httpTransport, mirroring the existing query pattern."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "Add an MSW handler serving the per-customer flag \u2014 the concrete 'flip without deploying' point in this mock-API repo."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/policy.ts",
+      "action": "modify",
+      "why": "Thread an injected 'enabled' boolean through canReschedule/validateReschedule so the disabled case is a pure, message-bearing domain rule."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Accept the flag and pass it to validateReschedule so submit is gated and surfaces the domain message."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Load per-client reschedule availability for the day's appointments so the view can gate the button."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Show/hide the Reschedule button per appointment based on its customer's flag."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new policy gate: reschedule denied when the customer flag is off, allowed when on."
+    },
+    {
+      "path": "apps/web/tests/scheduling.mappers.test.ts",
+      "action": "create",
+      "why": "Test the new flag DTO\u2192core mapper, mirroring the existing billing.mappers.test.ts."
+    }
+  ],
+  "uncertain": [
+    "Whether the flag gate belongs in core/policy.ts (pure boolean injected, chosen here so the 'unavailable' message lives in the domain) or should be UI-only capability gating with core left untouched \u2014 both are defensible under the constitution.",
+    "Whether to extend useDaySchedule for availability vs. add a dedicated ui/composables/useRescheduleAvailability.ts; I folded it into the existing loader since DayView is the only consumer, but a separate composable is cleaner if reused (rules 6/7).",
+    "A generic flag-fetch mechanism could theoretically go in shared/http or shared/lib, but only one slice uses it and 'reschedule' is a domain noun, so per rule 7 it stays inside scheduling (duplicate later, promote at the 3rd same-reason use).",
+    "Whether index.ts needs changes: I left it untouched because the reschedule flow is scheduling's own UI and no other slice/app reads the flag \u2014 but that assumes no cross-slice consumer needs it."
+  ],
+  "questions": [
+    "What does 'customer' mean here \u2014 the end-client on an appointment (clientId, e.g. c-ana) or the SaaS tenant/account using Vise? The keying and endpoint shape depend on this.",
+    "Where should the flag be sourced: a dedicated feature-flag endpoint (e.g. /api/feature-flags?client=), a field on an existing client/appointment payload, or an external flag service? This decides the DTO/query design.",
+    "Is UI gating sufficient, or must the reschedule mutation (PATCH /api/appointments/:id) also be rejected server-side when the flag is off? Hiding the button alone doesn't stop a direct API call.",
+    "Caching/freshness expectations: is a fetch-on-load flag acceptable, or does 'without deploying' imply near-real-time propagation (polling/invalidation) after an operator flips it?",
+    "Should turning the flow off apply only to new reschedules, or also hide/disable an already-open reschedule form and in-progress edits?"
+  ]
+}

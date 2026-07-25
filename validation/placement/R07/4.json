@@ -1,0 +1,138 @@
+{
+  "files": [
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add \"audit\" to the `slices` array (and likely \"audit\"/\"compliance\" to domainNouns); single source of truth driving Oxlint/depcruise/structure tests \u2014 CODEOWNERS-protected, needs architecture review."
+    },
+    {
+      "path": "apps/web/src/slices/audit/core/types.ts",
+      "action": "create",
+      "why": "AuditEntry domain entity \u2014 actor, timestamp, entityType (invoice|appointment), entityId, action, field-level changes \u2014 the framework-free heart of the compliance concern."
+    },
+    {
+      "path": "apps/web/src/slices/audit/core/rules.ts",
+      "action": "create",
+      "why": "Pure helpers to shape/group a change set into a human-readable trail (optional if the server delivers preformatted changes)."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/dto.ts",
+      "action": "create",
+      "why": "Server shape of an audit record (snake_case, ISO timestamps), kept private to data/ per the DTO rule."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mappers.ts",
+      "action": "create",
+      "why": "Map audit DTOs to/from core AuditEntry so DTOs never leak upward."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/queries.ts",
+      "action": "create",
+      "why": "fetchAuditTrail(entityType, entityId) \u2014 the read path compliance uses to see who/when/what."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mutations.ts",
+      "action": "create",
+      "why": "recordAuditEntry(...) write path invoked by other slices' mutations (may be redundant if recording is purely server-side)."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handlers for /api/audit; where seed history and server-side append-on-change is simulated."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/composables/useAuditTrail.ts",
+      "action": "create",
+      "why": "View state that loads an entity's audit history for display."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/components/AuditTrail.vue",
+      "action": "create",
+      "why": "Reusable trail renderer (who/when/what) embedded on invoice and appointment detail pages."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/views/ComplianceLogView.vue",
+      "action": "create",
+      "why": "Dedicated compliance log page \u2014 satisfies \"Compliance needs a record\" as a first-class destination and gives routes.ts a target."
+    },
+    {
+      "path": "apps/web/src/slices/audit/routes.ts",
+      "action": "create",
+      "why": "Route definition for the compliance log view; required 5th slice entry."
+    },
+    {
+      "path": "apps/web/src/slices/audit/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: AuditEntry type, fetchAuditTrail, recordAuditEntry, AuditTrail component, auditRoutes, auditMockHandlers."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose auditMockHandlers into the MSW worker (composition-root concern)."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate auditRoutes so the compliance log view is reachable."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mutations.ts",
+      "action": "modify",
+      "why": "voidInvoice must carry the actor with the request and trigger recording of the invoice change via @slices/audit (cross-slice through public index)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mutations.ts",
+      "action": "modify",
+      "why": "rescheduleAppointment must carry the actor and trigger recording of the appointment change via @slices/audit."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "The void handler should append a server-side audit entry so the trail reflects the change (server is authoritative recorder)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "The reschedule handler should append a server-side audit entry capturing old\u2192new times."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Thread the current actor into voidCurrent() since the mutation now needs \"who\"."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Thread the current actor into submit() for the same reason."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Render the AuditTrail component for the invoice so changes are visible in context."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the AuditTrail for the selected appointment (or AppointmentCard.vue, depending on where detail is shown)."
+    },
+    {
+      "path": "apps/web/src/app/providers/currentActor.ts",
+      "action": "create",
+      "why": "A source of \"who did it\" \u2014 identity is app-wide, not domain-specific; injected at composition root. Placement uncertain."
+    }
+  ],
+  "uncertain": [
+    "Whether audit should be a NEW top-level slice at all. Chose a slice because compliance/audit is a distinct reason-to-change (rule 6) and is 'about' auditing, not billing/scheduling (rule 5). But it is inherently cross-cutting, and creating it edits the CODEOWNERS-protected architecture.config.ts, forcing architecture review. The alternative \u2014 recording inline in each slice's data/mutations with no shared home \u2014 duplicates the entity and read model and is worse.",
+    "Where the current actor ('who') lives. There is currently NO user/session/auth concept anywhere in src. I put it in app/providers, but it could belong in shared/ (identity is domain-noun-free) or in a future dedicated auth slice. Biggest gap; drives several edits.",
+    "Whether client-side recordAuditEntry / data/mutations threading is correct. A compliance record must be tamper-resistant, so the authoritative recorder is the server; the frontend's real job may be only to send the actor with each mutation and display the trail. If so, audit/data/mutations.ts and client-side recording calls drop out and only the mock handlers record.",
+    "audit/core/rules.ts may be unnecessary if the API returns pre-diffed, preformatted changes; the frontend would then only render them.",
+    "Displaying the appointment trail: I guessed DayView.vue, but scheduling has no dedicated appointment-detail view \u2014 it may belong on AppointmentCard.vue or a new detail surface instead."
+  ],
+  "questions": [
+    "Who is the 'actor'? Is there (or will there be) authentication / a current-user identity, or does an upstream gateway stamp identity via a header? The frontend has no user concept today, so 'who did it' has no source yet.",
+    "Is the audit trail authoritative on the server (frontend only sends the actor + displays), or is the frontend expected to construct records? Compliance normally demands server-side, append-only, tamper-evident storage.",
+    "Which changes must be captured? Only the two mutations that exist today (void invoice, reschedule appointment), or all future edits (status transitions, line-item edits, cancellations)? Determines how many mutation sites need instrumentation.",
+    "Does compliance need a global log view, per-entity trails on detail pages, or both? And do they need export (CSV/PDF) and filtering by user/date/entity, or just in-app viewing?",
+    "Any retention, immutability, granularity ('what changed' = field-level diff vs. action label), or regulatory format requirements that constrain the AuditEntry shape?"
+  ]
+}

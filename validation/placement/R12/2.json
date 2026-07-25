@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free predicate defining which invoice fields a query matches (searchable-fields is domain knowledge; precedent: summarize/findConflicts live here and are unit-tested)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Own a reactive `search` ref, debounce it via the existing shared `useDebounce`, and expose a `filtered` computed applying the core predicate over the already-cached invoices."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the shared `Input` primitive bound to the composable's search ref and iterate the filtered list instead of raw `invoices`."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add the parallel pure appointment-match predicate (client/resource/status) so scheduling's searchable-fields logic is framework-free and testable."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Add a debounced `search` ref (shared `useDebounce`) and a `filtered` computed over the day's already-fetched appointments."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the shared `Input` search box and iterate the filtered appointments."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new billing match predicate (matches/misses across searchable fields, case-insensitivity)."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new scheduling match predicate the same way."
+    }
+  ],
+  "uncertain": [
+    "Placement of the match predicate in core/rules.ts vs inlining it in each composable. I put it in core because the constitution treats 'which fields are searchable' as domain knowledge and rewards pure, testable logic (matching summarize/findConflicts) \u2014 but the predicate is trivial enough that a reasonable reviewer could call it plain UI filtering that stays in the composable, in which case the two core/rules.ts and two test-file edits drop out.",
+    "Scope of 'both list views'. I read it as billing InvoiceListView + scheduling DayView (the only two genuine list screens). app/views/ClientOverviewView.vue also renders two record lists but is an overview composition, not a list view, so I excluded it \u2014 flagging in case it was meant to be searchable too.",
+    "'Without hammering the server' interpretation. Both datasets are already fully loaded client-side today (invoices via the store cache; appointments fetched-then-filtered per day), so client-side filtering + debounced input introduces zero new server traffic and satisfies the request. No new fetch-per-keystroke exists to debounce away \u2014 the debounce here just prevents recompute thrash. If the intent is a real server-side search endpoint, the changed files would instead be data/queries.ts, data/dto.ts, data/mappers.ts, data/mocks.ts, and each index.ts \u2014 a materially different plan."
+  ],
+  "questions": [
+    "Client-side filter over already-loaded data (fits the current architecture, no new server calls) or a server-side search endpoint with a debounced query param? This decides whether the data/ layer + mocks + public index.ts change instead of core/ui.",
+    "Which fields should each search match \u2014 invoices: number/status/clientId? appointments: clientId/resourceId/status? This defines the core predicate and its tests. (Note: invoice/appointment data is loaded fully but rows only render a subset; searching hidden fields like clientId may surprise users.)",
+    "Is the shared useDebounce default of 300ms acceptable, or is there a standard debounce interval for this app?",
+    "Expected UX for empty results and clearing the box \u2014 reuse the existing 'No appointments.'/empty-state pattern, and should the search term reset when the scheduling day changes?"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Once the invoice loads, call fetchUpcomingAppointments(invoice.clientId, new Date()) from the @slices/scheduling public alias and expose the soonest AppointmentSummary \u2014 the canonical cross-slice read exactly mirroring useInvoiceList.ts."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Render a small next-appointment panel from the composable's summary (Card + formatDate already imported), including empty/loading handling."
+    }
+  ],
+  "uncertain": [
+    "Whether to keep the panel inline in InvoiceDetailView.vue or extract a component. Per README worked example #2 and rule 6, inline-from-summary is correct first; a reusable 'next appointment' component about scheduling display would belong in scheduling/ui and be exposed via scheduling/index.ts, never created under billing. I chose inline because the request is one panel on one page.",
+    "scheduling/index.ts is intentionally NOT in my list: I verified it already exports both fetchUpcomingAppointments(clientId, now) and the AppointmentSummary type (which already carries start/resourceId/durationMinutes/status). It would only need touching if product wants a display field that AppointmentSummary lacks."
+  ],
+  "questions": [
+    "What exactly is 'next' \u2014 just the single soonest scheduled appointment, or a short upcoming list? And which fields to show (start date/time, resource, duration, status)?",
+    "What should render when the client has no upcoming appointment, or when the scheduling fetch fails/loads slowly \u2014 hide the panel, show an empty state, or a skeleton independent of the invoice's own loading state?",
+    "The repo currently has tests only for core/ and mappers/ (no UI or composable tests). Should this add a useInvoiceDetail composable test for the new join, or is leaving UI untested consistent with team convention?"
+  ]
+}

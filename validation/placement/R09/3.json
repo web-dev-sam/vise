@@ -1,0 +1,66 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/identity/core/types.ts",
+      "action": "create",
+      "why": "New slice's framework-free model: User/Role types + a pure hasRole helper \u2014 the current-user concept this feature depends on and that does not exist yet."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/queries.ts",
+      "action": "create",
+      "why": "Fetch the authenticated user and their roles from the API (e.g. GET /api/me) and map the DTO down to the core model."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handler seeding a current user with roles so the mocked dev/test API can return identity, mirroring billing/scheduling mocks."
+    },
+    {
+      "path": "apps/web/src/slices/identity/ui/composables/useCurrentUser.ts",
+      "action": "create",
+      "why": "Reactive current-user composable exposing role checks for UI consumers, following the slice's ui/composables pattern."
+    },
+    {
+      "path": "apps/web/src/slices/identity/routes.ts",
+      "action": "create",
+      "why": "Required 5th slice entry enforced by the structure test; identity has no routable views so it exports an empty route list."
+    },
+    {
+      "path": "apps/web/src/slices/identity/index.ts",
+      "action": "create",
+      "why": "The only public surface: re-exports routes (structure test) plus useCurrentUser and Role, the sole way billing may consume identity."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add \"identity\" to the `slices` single source of truth so the structure test, generated Oxlint/depcruise configs, and boundary allow-list recognise the new slice (CODEOWNERS-protected \u2192 architecture review)."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose identity's mock handlers into the app-level MSW bootstrap alongside billing and scheduling handlers."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/policy.ts",
+      "action": "modify",
+      "why": "Make voiding a role-aware business rule: canVoid (currently status-only) also requires the finance role, kept pure by taking roles as a parameter."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Read the current user's roles via the @slices/identity public alias (the canonical cross-slice pattern) and fold them into the canVoidInvoice computed that already gates the button."
+    }
+  ],
+  "uncertain": [
+    "Placement of the identity/roles concept. I chose a new slice because current-user+roles is a business capability with its own reason to change, not a design-system primitive. But it has no routes, so it fits the 5-entry slice shape awkwardly (must ship an empty routes.ts). It could instead live in shared/ (it would even pass the domain-noun grep, since user/role/finance aren't in domainNouns) or in app/, but that contradicts shared/ being zero-domain primitives only.",
+    "Whether the finance-role gate belongs in billing/core/policy.ts (my choice: a pure business rule, testable, but couples billing's void rule to a role string) or purely in the billing UI composable (keeps core role-agnostic but scatters the rule into UI).",
+    "Whether InvoiceDetailView.vue needs editing. It already renders the button with v-if=\"canVoidInvoice\", so folding the role check upstream needs no view change; if the team wants the authorization visible at the view, that would add a file."
+  ],
+  "questions": [
+    "There is no auth/identity/session anywhere in the repo. How is the current user established (JWT, cookie, an /api/me endpoint), and is there an existing backend/DTO contract for roles I should map to?",
+    "Is the role identifier literally the string \"finance\"? Are roles a flat set, or hierarchical (e.g. admin implies finance)?",
+    "Is hiding the button sufficient, or must voiding also be enforced server-side and/or at the route+mutation level? UI hiding is not real authorization \u2014 the /api/invoices/:id/void mock currently performs no role check.",
+    "Adding an `identity` slice edits architecture.config.ts (CODEOWNERS-protected) and thus triggers architecture review. Is that acceptable, or does the team prefer an alternative placement (shared/app) to avoid a boundary change?",
+    "Should the new role check compose with the existing canVoid rule (not-yet-paid AND finance) or is only the role gate wanted here?"
+  ]
+}

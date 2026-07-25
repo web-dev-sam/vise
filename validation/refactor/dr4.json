@@ -1,0 +1,21 @@
+{
+  "completed": true,
+  "all_checks_pass": true,
+  "checks_run": [
+    "vp lint (exit 0)",
+    "vue-tsc --noEmit -p tsconfig.json (exit 0)",
+    "depcruise src --ignore-known (exit 0, no violations, 86 modules/229 deps)",
+    "vp test run (28 passed / 5 files)",
+    "vp run --filter @vise/web verify:enforcement (all 13 rules bit, exit 0)"
+  ],
+  "folders_touched": [
+    "apps/web/src/slices/billing/ui/components (removed InvoiceStatusBadge.vue)",
+    "apps/web/src/slices/billing/ui/views (updated imports in InvoiceListView.vue + InvoiceDetailView.vue)",
+    "apps/web/src/slices/scheduling/ui/components (added InvoiceStatusBadge.vue)",
+    "apps/web/src/slices/scheduling (index.ts gained a public export)"
+  ],
+  "escape_hatches_used": "none \u2014 no CODEOWNERS-protected files edited (architecture.config.ts, generated configs, tsconfig.json, tests/architecture.*.test.ts all untouched); baseline stayed empty ([])",
+  "boundaries_crossed_that_should_not_be": "The relocation itself is a constitution rule-5 violation in spirit: InvoiceStatusBadge is *about* billing (it renders a billing InvoiceStatus), so it does not belong in scheduling. Making it legal also forced billing's UI views to reach across a slice boundary (billing/ui/views -> @slices/scheduling) to consume a badge that is really a billing concern.",
+  "unexpected_files_changed": "scheduling/index.ts had to gain a new public export (`export { default as InvoiceStatusBadge } from './ui/components/InvoiceStatusBadge.vue'`) beyond the raw file move + view-import updates, because deep imports (@slices/scheduling/ui/...) do not resolve by design \u2014 cross-slice use must go through the public surface.",
+  "notes": "DID IT DRAG BILLING INTO SCHEDULING? Yes \u2014 it is NOT self-contained. The faithful move kept the component's dependency on billing's `InvoiceStatus` type. Routed correctly through the public API (`import type { InvoiceStatus } from '@slices/billing'`), depcruise's no-circular rule fired with 3 errors: billing already imports scheduling (billing/ui/composables/useInvoiceList.ts -> @slices/scheduling for AppointmentSummary), so adding scheduling -> @slices/billing closed a billing<->scheduling cycle (verified: `x 3 dependency violations` on that version; vue-tsc still passed). The ONLY way to get all checks green was to sever the billing import and DUPLICATE the union locally inside the component (`type InvoiceStatus = 'draft'|'issued'|'paid'|'void'`). So the move still drags a billing domain type into scheduling \u2014 now as a silent copy rather than an import. Bottom line: this component cannot be relocated to scheduling and remain both faithful and self-contained; it either (a) imports billing and forms an illegal cycle, or (b) duplicates a billing domain type into an unrelated slice. Machine checks are green via (b), but the architecture signal is unambiguous: the badge belongs in billing (rule 5)."
+}

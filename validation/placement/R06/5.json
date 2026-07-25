@@ -1,0 +1,45 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Owns the rendered `appointments` ref, so it must gain an optimistic patch that replaces the moved appointment in-place (recomputing conflicts) and returns a rollback closure + reconcile-with-server step; this is what makes the new time show without a refetch."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Split validation from the awaited commit so the validated slot is exposed before the network call, and have `submit` report success (server appointment) vs rejection instead of just returning after the server resolves."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Orchestrate the sequence \u2014 apply the optimistic update to the day schedule immediately, submit, roll back on rejection, reconcile on success \u2014 replacing the current `onRescheduled \u2192 refresh()` that only reflects the change after the server responds."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/RescheduleForm.vue",
+      "action": "modify",
+      "why": "Its emit contract changes: it must signal the validated slot at submit time (optimistic apply) and later signal confirmed/rejected, rather than emitting only the server-confirmed appointment after the await."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free `applyReschedule(appointment, slot): Appointment` so the optimistic projection is derived from the domain instead of hand-built in the UI (keeps the moved-appointment construction testable and consistent)."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Tests live centrally in apps/web/tests (not colocated); add a unit test for the new pure `applyReschedule` core helper alongside the existing scheduling core tests."
+    }
+  ],
+  "uncertain": [
+    "Whether `applyReschedule` warrants a pure core helper at all \u2014 it is essentially `{ ...appointment, ...slot }`, so it may be over-engineering vs. inlining it in the composable. I leaned on core because the constitution favors derivable, framework-free domain transforms, but a reviewer could reasonably reject the extra indirection (dropping it also removes the scheduling.core.test.ts change).",
+    "Placement of the orchestration: I put the list mutation/rollback in `useDaySchedule` (owner of the list) and the sequencing in `DayView.vue`. An equally defensible alternative is to pass the day-schedule's patch/rollback handles into `useReschedule` and keep all sequencing in the composable. This is a genuine design fork, not a forced choice.",
+    "Whether the MSW mock (`data/mocks.ts`) needs a rejection path. Today the PATCH handler always succeeds (except 404), so with the real mock the rollback branch can never actually fire; demonstrating rollback may require adding a server-reject case there \u2014 but I'm unsure that's in scope for this request."
+  ],
+  "questions": [
+    "To exercise and demo the rollback, do you want a server-rejection scenario added to the MSW mock (e.g. a slot that double-books a resource returns 409), or is rollback-on-error expected to be handled purely as wiring with no mock change?",
+    "Should the optimistic display also recompute conflict highlighting against the proposed time before the server confirms, or should the optimistic phase only move the appointment and leave conflict flags until reconciliation?",
+    "Is this optimistic behavior scoped to the DayView only, or should the moved time also reflect immediately in the cross-slice read models (e.g. ClientOverview's upcoming appointments via `fetchUpcomingAppointments`)?",
+    "The repo intentionally keeps exactly one Pinia store (billing). Is keeping scheduling's reschedule state in the DayView composable acceptable, or do you expect a shared scheduling store \u2014 which would be a deliberate deviation from the 'one store' convention?"
+  ]
+}

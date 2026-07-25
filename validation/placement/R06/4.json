@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Owns the rendered `appointments` list; add an optimistic reschedule action that patches the matching appointment's start/end (and recomputes conflicts) immediately, then rolls the list back if the mutation rejects."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Currently awaits `rescheduleAppointment` before anything shows; change `submit` to run core validation then delegate persistence to the day-schedule's optimistic action (injected) so the list updates before the server responds and reverts on error."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/RescheduleForm.vue",
+      "action": "modify",
+      "why": "Stop depending on emit->full-refresh for the new time to appear; forward the optimistic reschedule action into `useReschedule` and surface a server-rejection error/rollback in the form."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Wire the day-schedule optimistic action into RescheduleForm and drop the `refresh()` refetch in `onRescheduled`, since the list already reflects the change optimistically."
+    },
+    {
+      "path": "apps/web/tests/scheduling.reschedule.test.ts",
+      "action": "create",
+      "why": "New behavioral test proving the observable contract: the time updates synchronously before the mutation settles and the list reverts to the prior slot when the server rejects."
+    }
+  ],
+  "uncertain": [
+    "Composable vs Pinia store for the shared list+optimistic state. I placed it in `useDaySchedule` because the state is view-local and the README says reach for a store only for cross-view shared state. But billing's `data/store.ts` is the blessed precedent for cached reactive state; if this list is meant to be shared across views/slices, the right move is create `apps/web/src/slices/scheduling/data/store.ts` and have `useDaySchedule` read from it instead \u2014 that shifts the optimistic apply/rollback into data/.",
+    "Whether to extract the pure list-patch (replace one appointment's times, re-run findConflicts) as a `core/rules.ts` helper for framework-free unit testing, vs inlining it in the composable. Leaning inline since it is trivial, but a core helper would be more in keeping with the 'logic in core' bias.",
+    "Threading the persist callback from `useDaySchedule` down through DayView into `useReschedule` is slightly awkward; a store would remove that wiring, which is another point in favor of the store option above."
+  ],
+  "questions": [
+    "Reconciliation: after the optimistic apply, do we trust the server's returned appointment (it may normalize/round times) and overwrite the optimistic value, or assume it echoes our input? The current mock echoes input, so this is untested.",
+    "Rollback UX: on rejection should the reschedule form re-open with the previous values and the server's error message, and should conflict highlighting reflect the optimistic (in-flight) state or the confirmed state?",
+    "Concurrency: how should rapid or overlapping reschedules of the same appointment behave (last-write-wins, ignore-while-in-flight, or cancel the prior request)?",
+    "Testing/demo the failure path: the MSW mock currently only 404s on unknown ids and otherwise succeeds. Should I extend `scheduling/data/mocks.ts` to simulate a server rejection (adds that file to the change set), or is injecting a failing transport in the test sufficient?"
+  ]
+}

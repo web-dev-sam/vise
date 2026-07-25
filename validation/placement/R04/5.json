@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentStatusBadge.vue",
+      "action": "create",
+      "why": "Dedicated coloured status-label component mirroring billing's InvoiceStatusBadge.vue (Record<AppointmentStatus, BadgeVariant> over @shared/ui/badge); this is the exact pattern invoices use."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the inline VARIANT_BY_STATUS badge with <AppointmentStatusBadge :status=...>, so the day view's status label matches the invoice pattern instead of ad-hoc inline markup."
+    }
+  ],
+  "uncertain": [
+    "Whether AppointmentStatusBadge should be consumed inside AppointmentCard (where the status badge already lives) or added directly in DayView.vue. I chose AppointmentCard because DayView renders the card and the card owns the status display today; putting it in DayView would duplicate/split the badge across two places.",
+    "Colour mapping for the new component: I would reuse the existing card map (scheduled->default, completed->success, cancelled->outline). Invoices also encode a derived 'overdue' -> destructive state; appointments have an analogous derived 'conflict' state already shown as a separate destructive badge in the card, so I would leave conflict as its own badge and keep the status badge status-only unless told otherwise.",
+    "No index.ts / core / data changes needed: AppointmentStatus already exists in scheduling/core/types.ts and the badge is UI-only. InvoiceStatusBadge is likewise not part of billing's public surface, so the new component stays slice-internal."
+  ],
+  "questions": [
+    "The day view ALREADY renders a coloured status badge inline in AppointmentCard.vue. Is the intent (a) to refactor that into a dedicated AppointmentStatusBadge component to match the InvoiceStatusBadge pattern, or (b) is the requester unaware it's already visible and the outcome is effectively already met? This changes whether any code is needed at all.",
+    "Should the appointment status badge also reflect any derived state the way invoices show 'overdue' (e.g. surfacing 'conflict' through the status badge), or keep conflict as the separate destructive badge it is today?",
+    "Are there any component/snapshot tests expected for the new badge? Current tests cover core/mappers/structure/config only, with no badge component tests to mirror."
+  ]
+}

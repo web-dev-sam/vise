@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/shared/lib/locale.ts",
+      "action": "create",
+      "why": "No locale mechanism exists yet; add a domain-free reactive source of the user's active language (Locale type + useLocale) \u2014 belongs in shared/lib alongside the other framework-light composable useDebounce, and contains no domain nouns."
+    },
+    {
+      "path": "apps/web/src/app/providers/locale.ts",
+      "action": "create",
+      "why": "Composition-root concern: detect/select the user's language (browser default -> de) once at startup, mirroring the existing msw.ts / errorBoundary.ts provider pattern."
+    },
+    {
+      "path": "apps/web/src/app/main.ts",
+      "action": "modify",
+      "why": "Wire the locale provider into bootstrap so the active language is set before the app mounts."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceStatusLabel.ts",
+      "action": "create",
+      "why": "Per-slice presentation mapping of InvoiceStatus (+overdue) to a localized label; a translation table changes for copy/localization reasons, not business-rule reasons, so it is UI, not core, and stays inside billing because it names a domain noun."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useAppointmentStatusLabel.ts",
+      "action": "create",
+      "why": "Per-slice presentation mapping of AppointmentStatus to a localized label, same rationale as billing's \u2014 lives in scheduling/ui, cannot go in shared/ (domain noun)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+      "action": "modify",
+      "why": "Only place invoice status text is rendered; replace the raw props.status / \"overdue\" string with the localized label from useInvoiceStatusLabel."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Only place appointment status text is rendered; replace the inline {{ status }} (and the hardcoded \"Conflict\") with the localized label from useAppointmentStatusLabel."
+    }
+  ],
+  "uncertain": [
+    "core/ vs ui/ for the label tables: I placed them in ui/composables because translations change for localization reasons (not business-rule reasons per constitution rule 6) and the existing status->badge-variant maps already live in the UI components. A reasonable teammate could argue the status label is a property of the domain and belongs in core/; I chose ui/ but flag it.",
+    "ClientOverviewView.vue (app view) hardcodes an \"overdue\" badge and appointment cards there show no status \u2014 if \"statuses\" includes that overdue badge, this file (and possibly a new label export on billing/index.ts) would also change. Left out of the definite list pending scope confirmation.",
+    "Whether the locale primitive should be shared/lib (framework-light composable, like useDebounce) or shared/ui. I chose shared/lib; if it must stay vue-free it may need to be split into a plain state module plus a ui composable.",
+    "Adding tests: the repo has core/mapper tests but no UI/composable tests, so I did not assume a test file. If label coverage is wanted, new tests (e.g. tests/billing.labels.test.ts) would be added following existing Vitest conventions."
+  ],
+  "questions": [
+    "Where do the German status strings come from \u2014 do you want them inlined in the per-slice label tables now, or is a real i18n library (e.g. vue-i18n) / translation-file workflow expected? That changes the shared primitive substantially.",
+    "How is the user's language determined: browser Accept-Language / navigator.language, a user preference persisted server-side, a URL/route locale, or a manual switcher? This decides what the app/providers/locale wiring reads.",
+    "Is scope strictly the two status labels, or does \"display in the user's language\" also cover dates and currency (format.ts is hardcoded to en-US) and the derived \"overdue\"/\"Conflict\" badges?",
+    "Which locales must launch (just en + de, or a broader set) and what is the fallback when a status has no translation for the active locale?",
+    "Do the German status strings need design/legal sign-off (e.g. invoice \"void\" -> \"storniert\"/\"ungueltig\"), and is there a glossary I should follow?"
+  ]
+}

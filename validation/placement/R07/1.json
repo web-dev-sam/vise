@@ -1,0 +1,103 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/audit/core/types.ts",
+      "action": "create",
+      "why": "Framework-free AuditEntry entity (actor, timestamp, entityType, entityId, action, before/after field changes) \u2014 the 'who/when/what' shape lives in a slice's core."
+    },
+    {
+      "path": "apps/web/src/slices/audit/core/rules.ts",
+      "action": "create",
+      "why": "Pure helper to diff two entity snapshots into a list of field changes, so 'what changed' is deterministic domain logic, not UI code."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/dto.ts",
+      "action": "create",
+      "why": "Server-shaped audit record DTO + zod schema (snake_case, ISO timestamps), kept private to data/ per the DTO rule."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mappers.ts",
+      "action": "create",
+      "why": "Maps the audit DTO to/from the core AuditEntry so server shapes never leak upward."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/queries.ts",
+      "action": "create",
+      "why": "fetchAuditTrail(entityType,id) / fetchAuditLog \u2014 validated read of the compliance record via httpTransport."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mutations.ts",
+      "action": "create",
+      "why": "recordAuditEntry POST \u2014 the single write path that persists one change to the audit trail."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handlers for GET/POST /api/audit backed by an in-memory log, so the mock 'server' holds the trail like billing/scheduling mocks do."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/views/AuditLogView.vue",
+      "action": "create",
+      "why": "Compliance-facing page that lists the audit trail (who/when/what) for invoices and appointments."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/composables/useAuditTrail.ts",
+      "action": "create",
+      "why": "View state that loads and filters audit entries, mirroring the existing composable pattern."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/components/AuditEntryRow.vue",
+      "action": "create",
+      "why": "Renders one audit entry (actor, timestamp, field-level before\u2192after) \u2014 a component about the audit domain."
+    },
+    {
+      "path": "apps/web/src/slices/audit/routes.ts",
+      "action": "create",
+      "why": "Owns the /audit route path; the app router only concatenates it."
+    },
+    {
+      "path": "apps/web/src/slices/audit/index.ts",
+      "action": "create",
+      "why": "The only public surface: exports auditRoutes, AuditEntry type, recordAuditEntry, fetchAuditTrail, and auditMockHandlers."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add 'audit' to the `slices` array \u2014 the structure test asserts the slices dir equals this list, and it's the toolchain's source of truth (CODEOWNERS/arch-review gated)."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate auditRoutes so the compliance audit-log view is reachable."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose auditMockHandlers into the MSW worker alongside the billing/scheduling handlers."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mutations.ts",
+      "action": "modify",
+      "why": "On voidInvoice, emit an audit record (import @slices/audit \u2014 a legal cross-slice-via-index edge) capturing the status change."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mutations.ts",
+      "action": "modify",
+      "why": "On rescheduleAppointment, emit an audit record capturing the start/end change."
+    }
+  ],
+  "uncertain": [
+    "Whether audit should be a new slice or a per-slice concern inside billing and scheduling. I chose one `audit` slice because compliance wants a single unified trail across both domains (one reason to change), and its core stays entity-agnostic (entityType is a string tag), so it never imports billing/scheduling internals. A reasonable reviewer could argue each slice should own its own audit and expose it \u2014 I'd want the team's call.",
+    "Where the change is actually captured: I put emission in each slice's data/mutations.ts (the single choke point every user change flows through). The alternative is capturing inside the MSW mock handlers (billing/scheduling data/mocks.ts) so the 'server' authors the record. Client/composable-side capture is skippable/forgeable; for a real compliance guarantee the authoritative record must be server-side. In this mock repo the mocks ARE the server, so mocks.ts emission may be the more honest placement \u2014 flagging both.",
+    "The 'who did it' actor. There is no auth/session/current-user anywhere in the codebase (grep found nothing), so I did not invent a file for it. Actor identity is likely an app-level provider or a shared/lib primitive ('actor', not a domain noun, so shared/ is permissible), and the transport may need to attach an actor header. I left this out of the concrete list because its correct home depends on how identity is decided.",
+    "Whether the generated configs (.dependency-cruiser.generated.json, .oxlintrc.json) need editing. I believe NOT \u2014 their rules are pattern-based (`^src/slices/[^/]+/`), slice-name-agnostic, and the `@slices/*` tsconfig path is a wildcard \u2014 so a new slice needs no config/path/tsconfig change beyond the `slices` array. A regeneration+consistency-test run would confirm this."
+  ],
+  "questions": [
+    "How is the acting user identified? There's no auth/session in the repo today. Do we have (or need) a current-user/actor source, and should audit calls read it client-side or should the backend stamp identity from the authenticated request?",
+    "Is the audit trail authored by the backend or by the frontend? Compliance records are typically server-authoritative (client-supplied audit is forgeable). If a real API will own this, the frontend work shrinks to reading + displaying the trail, and the mutation-side emission I listed would be removed.",
+    "What granularity does compliance need \u2014 full field-level before/after diffs, or just an action + actor + timestamp? And which events count as 'changes': only void/reschedule (today's mutations), or also create/issue/pay/cancel once those mutations exist?",
+    "Does the audit log need its own route/view in this app (I assumed yes: /audit), or is it consumed only by an external compliance system?",
+    "Adding an `audit` slice edits architecture.config.ts, which is CODEOWNERS-protected and triggers architecture review. Is standing up a new slice acceptable, or should audit be folded into existing slices to avoid that gate?",
+    "Retention/immutability requirements \u2014 must audit entries be append-only/tamper-evident? That affects storage and whether any client path may ever mutate them."
+  ]
+}

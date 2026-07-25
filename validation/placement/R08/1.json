@@ -1,0 +1,43 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/shared/lib/useLocale.ts",
+      "action": "create",
+      "why": "Domain-free primitive exposing the current UI locale (reactive accessor, en fallback) that status labels and formatters read; no domain noun so it passes the shared/ structure test."
+    },
+    {
+      "path": "apps/web/src/app/main.ts",
+      "action": "modify",
+      "why": "Composition root detects the user's language (e.g. navigator.language) and sets the locale once at startup."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+      "action": "modify",
+      "why": "Replace the raw `props.status` / \"overdue\" text with a locale-keyed label lookup for draft/issued/paid/void; invoice-status vocabulary is billing's, stays in-slice."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the raw `appointment.status` text with a locale-keyed label lookup for scheduled/completed/cancelled; appointment-status vocabulary is scheduling's, stays in-slice."
+    },
+    {
+      "path": "apps/web/src/app/views/ClientOverviewView.vue",
+      "action": "modify",
+      "why": "This cross-slice app view renders a hardcoded English \"overdue\" invoice-status badge inline, which also needs localizing."
+    }
+  ],
+  "uncertain": [
+    "Placement of the locale accessor: I put it in shared/lib (mirroring useDebounce.ts, and it carries no domain noun), but the initial value/detection is arguably an app/providers composition-root concern \u2014 split accessor (shared) vs wiring (app) may be debated.",
+    "Where the German status strings live: I assumed small locale-keyed Records inline in each slice component (matching the existing VARIANT_BY_STATUS pattern; the repo prefers duplication over premature abstraction). A per-slice labels module or a vue-i18n message catalog is the alternative and would change the file list.",
+    "ClientOverviewView's \"overdue\" badge: localizing it inline duplicates billing's label, but InvoiceStatusBadge is private (not in billing/index.ts) so the app view can't import it, and billing exposes no label helper. The clean fix might instead be exposing an invoice-status label via billing/index.ts \u2014 which would add/modify billing/index.ts and billing/ui.",
+    "Whether shared/lib/format.ts (dates and money hardcoded to en-US) is in scope: a real German launch usually needs localized dates/currency too, but the request names only statuses, so I left format.ts out of the file list."
+  ],
+  "questions": [
+    "Is there an approved i18n approach \u2014 add vue-i18n (message catalogs), or a lightweight in-house locale map? This drives whether we create catalog/label files vs inline Records.",
+    "How is the user's language determined: browser (navigator.language), a user-profile setting, URL prefix, or an in-app language switcher (which would require reactive re-render + a persisted setting)?",
+    "Does 'display in the user's language' mean statuses only for now, or full localization including dates and currency (format.ts) as part of the German launch?",
+    "Is German being added alongside English with English as fallback, and are only these two locales in scope?",
+    "Can you confirm the German translations for each status (draft/issued/paid/void, scheduled/completed/cancelled) and the derived labels 'overdue' and 'Conflict'?",
+    "Are non-status UI strings (e.g. the 'Conflict' badge, section headings) explicitly out of scope for this request?"
+  ]
+}

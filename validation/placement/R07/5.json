@@ -1,0 +1,115 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/audit/core/types.ts",
+      "action": "create",
+      "why": "Framework-free AuditEntry entity: actor, timestamp, target kind+id, action, and the set of field-level changes."
+    },
+    {
+      "path": "apps/web/src/slices/audit/core/rules.ts",
+      "action": "create",
+      "why": "Pure change-set computation (diff before/after into a list of {field, from, to}) so 'what changed' is domain logic, not UI glue."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/dto.ts",
+      "action": "create",
+      "why": "Server shape (snake_case, ISO dates) + zod schema for audit records; DTOs stay in data/."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mappers.ts",
+      "action": "create",
+      "why": "Map audit DTO<->core AuditEntry, mirroring the billing/scheduling mapper convention."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mutations.ts",
+      "action": "create",
+      "why": "recordAuditEntry() POSTs a new audit record \u2014 the write path every change flows through."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/queries.ts",
+      "action": "create",
+      "why": "fetchAuditTrail(targetKind,targetId) / fetchAuditEntries so compliance can read the history."
+    },
+    {
+      "path": "apps/web/src/slices/audit/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handlers + in-memory log for /api/audit, matching how billing/scheduling mock their APIs."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/composables/useAuditTrail.ts",
+      "action": "create",
+      "why": "View state (load/loading) for the compliance trail, following the composable pattern."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/components/AuditEntryRow.vue",
+      "action": "create",
+      "why": "Renders one entry: who, when, and the changed fields."
+    },
+    {
+      "path": "apps/web/src/slices/audit/ui/views/AuditTrailView.vue",
+      "action": "create",
+      "why": "The compliance-facing view listing the change history."
+    },
+    {
+      "path": "apps/web/src/slices/audit/routes.ts",
+      "action": "create",
+      "why": "Owns the /audit route(s); required slice entry, re-exported by index.ts."
+    },
+    {
+      "path": "apps/web/src/slices/audit/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: auditRoutes, AuditEntry type, recordAuditEntry, fetchAuditTrail, auditMockHandlers."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add \"audit\" to the `slices` array (the documented 'add a slice, toolchain follows' hook) and allow the new cross-slice edges billing/scheduling -> @slices/audit; CODEOWNERS-protected, needs architecture review."
+    },
+    {
+      "path": "apps/web/.oxlintrc.json",
+      "action": "modify",
+      "why": "Regenerated (not hand-edited) from architecture.config.ts so the audit folder gets its layer import overrides; consistency test enforces it."
+    },
+    {
+      "path": "apps/web/.dependency-cruiser.generated.json",
+      "action": "modify",
+      "why": "Regenerated allow-list including the audit slice and the new emit edges; else depcruise fails the new edges."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Composition root concatenates auditRoutes, like the other slices."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose auditMockHandlers into the MSW worker."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "After voidCurrent (has before+after invoice), call @slices/audit recordAuditEntry \u2014 the canonical cross-slice pattern is composable->another slice's public alias."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "After a successful reschedule (has before+after appointment), record the change via @slices/audit."
+    }
+  ],
+  "uncertain": [
+    "Making 'audit' a new slice vs. keeping per-slice audit logic inside billing/scheduling. I chose a new slice because compliance is a distinct reason-to-change spanning both domains, and architecture.config.ts explicitly says 'add a slice name here and the whole toolchain follows' \u2014 but a reviewer could argue each slice should own its own audit emission and there be no shared audit domain.",
+    "Emission point: I put the recordAuditEntry calls in the two UI composables (matches the README's only documented cross-slice example: a composable importing @slices/<other>). The alternative is emitting inside each data/mutations.ts, but I'm unsure whether the depcruise allow-list permits a data/ layer to import another slice's index \u2014 the documented precedent is ui-level, so I avoided it.",
+    "Where the acting user ('who did it') comes from. There is currently NO auth/current-user/session concept anywhere in the codebase and httpTransport sends no identity. I'd likely inject the actor the same way `now`/`today` are injected from the composition root, but it could instead warrant a shared/lib actor accessor or an app/providers entry \u2014 genuinely unsure, and 'user'/'actor' being a domain-noun question for shared/ adds doubt.",
+    "Whether the generated config files (.oxlintrc.json, .dependency-cruiser.generated.json) should appear as 'modified' \u2014 they're script-emitted from architecture.config.ts, so in practice you edit the source of truth and regenerate; I listed them because CI checks them.",
+    "Whether a UI view/route is even in scope \u2014 the request says 'a record', which is the write side; the read/display side (AuditTrailView, route) is my inference that compliance needs to retrieve it."
+  ],
+  "questions": [
+    "This is a frontend-only repo with a mock API. A client-side audit log is trivially bypassable and unreliable \u2014 shouldn't the authoritative 'who/when/what' record be produced server-side, with the frontend only displaying it? That would drastically change the file list (mostly a read-only view).",
+    "How is the acting user identified? There is no auth/session/current-user anywhere today. Where does identity come from, and can I add a way to source it?",
+    "What granularity of 'what changed' does compliance need \u2014 a field-level before/after diff, or just the action (e.g. 'voided', 'rescheduled')? Today only voidInvoice and rescheduleAppointment exist as mutations.",
+    "Is a compliance-facing UI (a route/view to browse the trail) in scope, or only the recording of entries?",
+    "Which changes count? Only the two existing mutations (void invoice, reschedule appointment), or every future create/update/delete on invoices and appointments \u2014 and does viewing/reading count as a 'change'?",
+    "Adding a slice touches architecture.config.ts and the generated configs, which are CODEOWNERS-protected and require architecture review. Is that approval path expected/available for this work?",
+    "Retention/immutability requirements? Compliance records usually must be append-only and retained for a defined period \u2014 does that constrain the storage/API design?"
+  ]
+}

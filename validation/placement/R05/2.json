@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Add the canonical cross-slice call fetchUpcomingAppointments(invoice.clientId, now) via the @slices/scheduling public alias (mirroring useInvoiceList) and expose a nextAppointment: Ref<AppointmentSummary|null> derived from the loaded invoice."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Consume nextAppointment from the composable and render a small 'next appointment' panel inline from the AppointmentSummary (start/duration/resource), matching how ClientOverviewView displays summaries."
+    }
+  ],
+  "uncertain": [
+    "scheduling/index.ts / scheduling/data/queries.ts: I believe NO change is needed because fetchUpcomingAppointments(clientId, now) and the AppointmentSummary read model are already on scheduling's public surface (used by ClientOverviewView). Flagging in case the team wants a purpose-built 'nextAppointment' read model rather than taking [0] of the upcoming list.",
+    "Whether to render inline in the billing view vs. create a dedicated presentational component. Per README rule (component belongs to the slice it is about), a scheduling-display component would live in scheduling/ui and be exposed via scheduling/index.ts \u2014 NOT copied into billing. I chose inline because the existing AppointmentCard takes the private Appointment entity (not AppointmentSummary) and isn't exported; promote to a shared scheduling/ui component only if this panel grows.",
+    "apps/web/tests/billing.useInvoiceDetail.test.ts (create): a behavioral test for the new join would fit the tests/ convention, but there is currently NO precedent for testing composables/UI (only core + mappers are tested), so I'm unsure the team wants one here."
+  ],
+  "questions": [
+    "'Next upcoming appointment' is singular \u2014 show only the single soonest one, or a short list of upcoming appointments?",
+    "Where should `now` come from? core rules follow a 'clock is always passed in' convention; should the composable call new Date() directly, or should `now` be injected for testability/consistency?",
+    "What is the definition of 'upcoming'? fetchUpcomingAppointments already filters to status==='scheduled' AND start>now \u2014 is scheduled-and-future the intended definition (excluding completed/cancelled)?",
+    "Desired empty/loading copy when the client has no upcoming appointment (e.g. 'No upcoming appointments'), and should the panel show while the invoice is still loading?"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentStatusBadge.vue",
+      "action": "create",
+      "why": "New dedicated coloured-status-label component mirroring billing's InvoiceStatusBadge.vue: maps AppointmentStatus -> shared Badge variant; lives in the scheduling slice (not shared/) because it changes for a scheduling reason, distinct from the invoice badge (rule 6/7)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the inline VARIANT_BY_STATUS map + Badge with the new AppointmentStatusBadge component; AppointmentCard is the component the day view renders for each appointment, so this is where the status label is shown."
+    }
+  ],
+  "uncertain": [
+    "The day view (DayView.vue) already renders a coloured status Badge today via AppointmentCard's inlined map, so strictly 'appointments show a coloured status label in the day view' is arguably already satisfied. I read the request as 'do it the invoice way' \u2014 i.e. extract a reusable AppointmentStatusBadge component matching InvoiceStatusBadge \u2014 rather than a purely visual change. If that reading is wrong, no code change may be needed.",
+    "Host placement: I put the badge in AppointmentCard.vue (which DayView composes) rather than editing DayView.vue directly, because the card already owns per-appointment presentation. If the team instead wants the label rendered by DayView alongside/outside the card, DayView.vue would be the file to modify instead.",
+    "I deliberately did NOT place the component in shared/ui: per constitution rule 7 the invoice and appointment badges are two same-looking-but-different-reason usages, so they stay duplicated per-slice. If the team disagrees and wants a single shared StatusBadge primitive, the file set changes (a shared/ui component + edits to both slices), but that would require a domain-noun-free API and architecture review."
+  ],
+  "questions": [
+    "Is this request about the architecture (extract a dedicated AppointmentStatusBadge to mirror invoices) or purely visual? The day view already shows a coloured status badge, so I want to confirm the actual gap before touching code.",
+    "Should the reschedule-eligibility/conflict styling stay as-is, or does 'status label' also need to reflect the conflict state (currently a separate 'Conflict' badge sits next to the status badge)?",
+    "Are the current status->colour mappings (scheduled=default, completed=success, cancelled=outline) the intended final palette, or should any statuses (e.g. cancelled) be recoloured as part of this?"
+  ]
+}

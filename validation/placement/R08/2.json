@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/shared/lib/i18n.ts",
+      "action": "create",
+      "why": "Domain-free locale primitive (active locale from navigator.language + a translate/useLocale helper), mirroring useDebounce.ts; the only 'user's language' mechanism, and the only i18n piece allowed in shared/ because it carries zero domain nouns."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+      "action": "modify",
+      "why": "Sole render site of invoice status text (label = props.status / 'overdue'); swap raw string for a locale-aware lookup whose German dictionary for draft/issued/paid/void/overdue lives here as billing UI copy."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Sole render site of appointment status text ({{ props.appointment.status }}); swap raw string for a locale-aware lookup whose German dictionary for scheduled/completed/cancelled lives here as scheduling UI copy."
+    },
+    {
+      "path": "apps/web/src/app/views/ClientOverviewView.vue",
+      "action": "modify",
+      "why": "Hardcodes an 'overdue' badge label (line 42) that duplicates the invoice status copy outside InvoiceStatusBadge; must be localized (ideally by reusing the billing badge instead of a literal)."
+    }
+  ],
+  "uncertain": [
+    "Whether per-slice German status labels belong inline in the two badge components (chosen: single consumer each, rule 7 says don't abstract before 3 uses) or extracted to a co-located helper like billing/ui/composables/useInvoiceStatusLabel.ts + scheduling equivalent. Extraction would also require exporting from each slice index.ts.",
+    "Whether status label maps belong in ui/ (chosen: translation/copy changes for UX reasons, not business rules) or in core/types.ts alongside the status unions. I placed them in ui/ deliberately, but a team could argue the label set is a core concern.",
+    "ClientOverviewView's 'overdue' literal: localize it in place vs. refactor the view to consume billing's InvoiceStatusBadge via billing/index.ts (removes the duplication but widens the change into the public surface).",
+    "How the active locale is stored: a module-level reactive ref in shared/lib/i18n.ts (chosen, matches useDebounce style) vs. Pinia \u2014 the README says 'one store, on purpose' and the structure test bans a stores/ dir, so a store may or may not be the intended home for app-wide locale state."
+  ],
+  "questions": [
+    "Scope: the request names only statuses, but shared/lib/format.ts hardcodes 'en-US' for dates, times, and currency. Should launching in German also localize those (formatDate/formatDateTime/formatMoney), or is that a separate ticket?",
+    "How is the user's language determined \u2014 browser navigator.language, an account/profile setting from the API, a URL/route locale, or a manual switcher? This decides what i18n.ts reads and whether a persisted preference is needed.",
+    "Is German the only target now, or should the label maps be structured for N locales (full message-catalog shape) from the start? README rule 7 forbids a central messages/de.json under shared because it would contain domain nouns, so multi-locale catalogs would still have to live per-slice.",
+    "There is no component-test harness (no @vue/test-utils / render tests; existing tests are core/mappers/structure only). How should the localized badge output be verified \u2014 add a test dependency, or is manual/dev-server check acceptable?",
+    "For 'void' specifically, confirm the intended German term (e.g. 'storniert' vs 'ung\u00fcltig') and likewise the preferred wording for issued/overdue \u2014 these are product/marketing copy decisions, not developer ones."
+  ]
+}

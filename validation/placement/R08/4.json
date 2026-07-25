@@ -1,0 +1,48 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/shared/lib/locale.ts",
+      "action": "create",
+      "why": "Domain-free reactive 'current locale' primitive (Locale = 'en'|'de', useLocale/setLocale) \u2014 the mechanism for 'user's language'; lives in shared/lib because it has zero domain nouns and both core (core->shared/lib is allowed) and ui may read it."
+    },
+    {
+      "path": "apps/web/src/app/main.ts",
+      "action": "modify",
+      "why": "Composition root: detect/initialize the user's locale (e.g. from navigator/Accept-Language) at bootstrap so the whole app renders in the right language."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+      "action": "modify",
+      "why": "This is where the invoice status label is produced (currently raw English `props.status`/'overdue'); add a locale-keyed label map beside the existing VARIANT_BY_STATUS so the badge text is German/English."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Only place appointment status renders (raw `appointment.status` plus 'Conflict'); add a locale-keyed label map beside its VARIANT_BY_STATUS to localize the status text."
+    },
+    {
+      "path": "apps/web/src/app/views/ClientOverviewView.vue",
+      "action": "modify",
+      "why": "Cross-slice overview hardcodes an inline 'overdue' badge (does not reuse InvoiceStatusBadge), so it must be localized separately."
+    },
+    {
+      "path": "apps/web/src/shared/lib/format.ts",
+      "action": "modify",
+      "why": "Date/money formatters are pinned to 'en-US'; 'display in the user's language' arguably implies these follow the active locale too \u2014 flagged as scope-adjacent, not strictly 'statuses'."
+    }
+  ],
+  "uncertain": [
+    "Where the German status strings actually live. I placed them inline in the badge/card components to match the existing precedent (VARIANT_BY_STATUS maps live in those components). Alternatives I weighed: (a) extract to each slice's ui/composables/ (e.g. useInvoiceStatusLabel) for reuse; (b) a pure `invoiceStatusLabel(status, locale)` in the slice's core/ \u2014 this is legal (core->shared/lib allowed) and mirrors the codebase's strong 'inject now/today instead of reading a clock' pattern by taking `locale` as a param, but labels change for copy/translation reasons rather than business-rule reasons, which argues against core. Labels can never go in shared/ \u2014 they carry domain nouns (invoice/appointment) and would fail the shared/ grep test.",
+    "Locale initialization site: inline in app/main.ts vs. a new app/providers/locale.ts provider (parallel to msw.ts/errorBoundary.ts). I listed main.ts; a provider may be cleaner if detection grows.",
+    "ClientOverviewView duplicating the single 'overdue' word instead of reusing InvoiceStatusBadge (which is billing-internal, not exported from billing/index.ts). Rule 7 says two usages -> duplicate, so duplication is probably correct, but the alternative is broadening billing's public surface to export the badge.",
+    "Whether shared/lib/format.ts is in scope at all \u2014 the request literally says 'statuses', but a German launch normally wants de-DE dates and EUR currency too."
+  ],
+  "questions": [
+    "Is the locale chosen automatically (browser/Accept-Language) for the German launch, or do you also need a user-facing language switcher (which would add app-level UI + persisted state)?",
+    "Just en+de for now, or should this be a general i18n foundation for more locales? That decides between a tiny in-house label map (fits the 'minimal deps / one store on purpose' ethos) and adopting vue-i18n.",
+    "Scope of 'display in the user's language': only the status/overdue/conflict badges, or all visible copy (section headings, empty-state text, the 'Reschedule' button, 'Conflict', 'overdue')? Right now only statuses are localized under this plan.",
+    "Should dates and currency also localize (de-DE formatting, and does German launch imply EUR rather than USD)?",
+    "Where is the German copy authored and who owns it? architecture.config.ts and the structure/consistency tests are CODEOWNERS-protected; a new translation source of truth may need an owner.",
+    "Testing: there is currently no UI-component test harness (no @vue/test-utils in devDependencies) \u2014 tests are core/mappers/structure only. Do you want the label logic kept pure (so it can be unit-tested like core/rules), or is adding a component-test setup acceptable?"
+  ]
+}

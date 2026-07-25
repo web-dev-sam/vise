@@ -1,0 +1,56 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Add the search Input (existing @shared/ui/input primitive) bound to the composable's query ref and render the filtered rows instead of the raw list."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Own the query ref, debounce it via the existing @shared/lib/useDebounce, and expose a filteredInvoices computed built from a core predicate."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free matchesInvoiceQuery predicate \u2014 which invoice fields are searchable is a billing domain decision, and core already houses invoiceTotalMinor/summarize."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Add the same search Input bound to the composable query and filter the rendered appointment cards (markup duplicated here, not promoted \u2014 rule 7, only two usages)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Own the query ref, debounce via @shared/lib/useDebounce, and expose a filtered appointments computed using a core predicate."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure matchesAppointmentQuery predicate \u2014 the searchable-field decision is scheduling domain logic, sitting beside findConflicts/durationMinutes."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new matchesInvoiceQuery predicate; core rules are unit-tested here already."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new matchesAppointmentQuery predicate alongside the existing scheduling core tests."
+    }
+  ],
+  "uncertain": [
+    "Placing the match predicate in core/rules.ts vs. inlining it in the ui composable. I chose core because it is pure and 'which fields are searchable' is a domain decision (passes the 'delete Vue and it still makes sense' test, mirrors findConflicts/invoiceTotalMinor), but it is borderline enough that a reviewer could call it trivial UI-level string matching that belongs in the composable.",
+    "No new shared SearchInput component: rule 7 says promote only at 3+ same-reason usages, and this is exactly two, so I duplicate the Input+binding markup in each view. If the team expects a shared wrapper anyway, that would add a apps/web/src/shared/ui/... file (and must stay domain-noun-free).",
+    "Whether 'both list views' means InvoiceListView.vue and DayView.vue. Billing has one obvious list; scheduling's only list is DayView (a single-day schedule, not a generic list), so I assumed that is the second one.",
+    "Whether server-side filtering is intended. Both views currently load the entire list client-side (billing via the Pinia cache store, scheduling by fetching all appointments then filtering by day), so filtering-as-you-type never touches the server and 'without hammering the server' is satisfied purely by debouncing keystrokes. If real server-side search is wanted, the touched files change substantially (see questions)."
+  ],
+  "questions": [
+    "Client-side or server-side search? Today the full lists are already in memory, so a debounced client-side filter hits the server zero times. If you actually want a server query per search, we'd instead add a search param to data/queries.ts (and billing's store.ts / dto.ts, possibly each slice's index.ts) and debounce the fetch \u2014 a different, larger change.",
+    "What should each box match? For invoices: number only, or also status / client? For appointments: DayView currently shows resourceId, time and status but not clientId \u2014 should search cover resource, status, client id, or something human-readable we don't yet display?",
+    "Expected debounce delay (useDebounce defaults to 300ms) and desired empty-state / clear behaviour when no rows match?",
+    "Is keeping the search box duplicated across the two views (rather than a shared primitive) acceptable per rule 7, or do you want it promoted to shared/ui now in anticipation of more list views?"
+  ]
+}

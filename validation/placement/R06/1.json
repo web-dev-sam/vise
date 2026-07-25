@@ -1,0 +1,37 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "It owns the reactive appointments list + derived conflicts, so the optimistic patch (apply new start/end + recompute conflicts immediately) and the snapshot-and-rollback on server rejection belong here."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "submit() today validates then awaits the mutation and only returns after the server responds; it must apply the validated slot optimistically before awaiting rescheduleAppointment and trigger rollback + surface the error when the promise rejects."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "onRescheduled currently does a full refresh() (why the new time only shows after the round-trip); it must wire the optimistic apply into useDaySchedule instead of refetching, and re-sync/rollback on rejection."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/RescheduleForm.vue",
+      "action": "modify",
+      "why": "It only renders pre-submit validation errors and closes on success; it needs to surface the post-rollback server-rejection error so a failed optimistic reschedule is visible to the user."
+    }
+  ],
+  "uncertain": [
+    "Whether the optimistic patch+rollback lives in useDaySchedule (list/conflict owner) with useReschedule delegating to it, versus being coordinated in DayView \u2014 the seam between the two composables is the least obvious part and I picked useDaySchedule because it holds the list state.",
+    "Whether RescheduleForm actually needs to change, or the rejection error should be shown elsewhere (e.g. a toast) \u2014 depends on the desired failure UX, which the request doesn't specify.",
+    "Where an automated test for the optimistic/rollback behavior should go: apps/web/tests/ only holds core/mappers tests (scheduling.core.test.ts) with no UI-composable precedent, so there's no established place for a composable-level test.",
+    "No data-layer change seems needed \u2014 mutations.ts already returns the updated Appointment and httpTransport throws HttpError on non-2xx (so rejection is detectable) \u2014 but I'm assuming no new Pinia store is warranted since the list is a per-view local ref, not shared cross-view cache."
+  ],
+  "questions": [
+    "On server rejection after rollback, what exactly should the user see and where (inline form alert vs a global toast), and should the reschedule form reopen with their entered values?",
+    "During the optimistic window (before the server confirms), should conflict highlighting recompute live off the tentative time, or only after confirmation?",
+    "If the server accepts but returns a normalized time different from what was requested, should we reconcile the list to the server's value on success (replace the optimistic value)?",
+    "Should an in-flight optimistic change survive the user navigating away/back before the server responds \u2014 i.e. is per-view local state acceptable, or is shared/cached state (a store) expected here?",
+    "Is this optimistic pattern scheduling-specific for now, or should it be a reusable primitive (the billing slice has a similar cache store) \u2014 affects whether anything is generalized rather than kept inside scheduling/ui?"
+  ]
+}

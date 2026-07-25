@@ -1,0 +1,40 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Restructure submit() to write the validated new time into the shared list immediately (before awaiting the server) and roll it back in a catch when rescheduleAppointment rejects; today it only reports success after the response."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "This composable owns the appointments Ref the view renders, so it must expose a by-id patch/replace + snapshot-restore that also recomputes conflicts, giving the reschedule flow something to optimistically mutate and revert."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Wire the useDaySchedule mutators into the reschedule flow and drop the unconditional refresh() on success, since the list is now updated optimistically rather than refetched after the server responds."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/RescheduleForm.vue",
+      "action": "modify",
+      "why": "Plumb the day-schedule mutators/handlers through to useReschedule and surface a rollback error to the user when the server rejects the new time."
+    },
+    {
+      "path": "apps/web/tests/scheduling.reschedule.test.ts",
+      "action": "create",
+      "why": "No composable-level test exists; add one asserting the new time appears immediately and is reverted when the mutation rejects (the two observable halves of the request)."
+    }
+  ],
+  "uncertain": [
+    "Ownership split: the optimistic apply+rollback could live as a single method on useDaySchedule (it owns the list) instead of threading its mutators into useReschedule. I leaned toward keeping form/validation in useReschedule and list-state in useDaySchedule, but which composable orchestrates the optimistic swap is a genuine fork.",
+    "Whether to keep the logic inside the slice's existing composables vs. extracting a generic useOptimistic helper. I kept it in-slice per README rule 7 (promotion to shared/ needs 3+ same-reason uses and no domain nouns), but if billing needs the same pattern this could later be promoted.",
+    "mocks.ts (data/mocks.ts): the PATCH handler currently always succeeds, so rollback can't actually be observed in dev or the MSW-backed test. I did not list it as a required change because the product behavior doesn't need it, but demonstrating/testing rollback likely requires a rejectable mock path \u2014 unsure if that belongs in this change."
+  ],
+  "questions": [
+    "On server rejection after rollback, what should the user see? Keep the form open with an error, toast, silently revert? And what copy distinguishes a server-side conflict from the pre-flight core-policy validation errors already handled?",
+    "Should the optimistic move re-run conflict detection immediately so a newly-created double-booking highlights instantly, and is showing an optimistic state that itself conflicts acceptable?",
+    "The PATCH response returns the canonical appointment \u2014 on success should we reconcile the list to the server's returned value (in case the server normalizes the time), or trust the optimistic value and skip the refetch entirely?",
+    "Does the real backend (not the MSW mock) return non-2xx beyond 404 for a rejected reschedule, and is there a typed error body we should map in data/ so the UI can show a meaningful reason?"
+  ]
+}

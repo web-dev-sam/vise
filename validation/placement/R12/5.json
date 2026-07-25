@@ -1,0 +1,56 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free invoice filter predicate (e.g. filterInvoices/matchesInvoiceQuery) \u2014 which fields count as a match is domain knowledge, so it lives in core and stays unit-testable without Vue."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Own a reactive search `query` ref, debounce it via shared useDebounce, and expose the filtered invoice list to the view (search UI state belongs in the ui composable)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the <Input> search box (existing shared primitive) bound to the composable's query, above the invoices table."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new pure invoice filter predicate (matches/no-match, case-insensitivity, empty query)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free appointment filter predicate mirroring billing's \u2014 kept duplicated per slice, not promoted to shared (rule 7: only 2 usages)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Own a debounced search `query` ref and expose a filtered appointments list alongside the existing day/conflict state."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the <Input> search box bound to the composable's query, above the appointment list."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new pure appointment filter predicate."
+    }
+  ],
+  "uncertain": [
+    "Placement of the filter predicate: I put it in each slice's core/rules.ts because 'which fields match' is domain knowledge and belongs to framework-free, deletable-if-Vue-dies logic. It is borderline \u2014 a case could be made for keeping trivial substring filtering inside the ui composable. I leaned core for testability and purity.",
+    "Duplicating the predicate in both slices rather than a shared helper: intentional per constitution rule 7 (3+ same-reason usages before promotion to shared/lib; two usages stay duplicated). Confident but flagging the deliberate non-DRY choice.",
+    "Whether to touch the central tests/*.core.test.ts files as part of this change vs. leaving them to a follow-up \u2014 I included them because a real feature needs regression coverage and that folder is the established home for core tests.",
+    "No index.ts changes: the search filter is intra-slice (ui -> own core), so nothing new needs to cross a slice's public surface. I'm fairly sure, assuming client-side filtering (see questions)."
+  ],
+  "questions": [
+    "Client-side or server-side search? Both lists already load their FULL dataset once (billing caches all invoices in the Pinia store via ensureLoaded; scheduling fetches all appointments then filters by day in memory). So 'filters as you type without hammering the server' is naturally satisfied by in-memory filtering + a debounced input, with NO new query/DTO/MSW work. If you actually want server-side search (a `?q=` param), that changes the file list substantially (billing/data/queries.ts + store.ts, scheduling/data/queries.ts, each slice's data/dto.ts + mappers.ts + mocks.ts) \u2014 which do you intend?",
+    "Scheduling has no human-readable text field to search: an Appointment carries only opaque ids (clientId, resourceId), a status, and start/end times \u2014 there's no name/number like an invoice has. What should the appointment search actually match on, and do we need to resolve/display client or resource names first (which would pull in more data)?",
+    "For invoices, which fields should the search match \u2014 invoice `number` only, or also status / client? And is it case-insensitive substring, or prefix?",
+    "Is the shared useDebounce default of 300ms the desired delay, or do you have a specific debounce interval in mind?"
+  ]
+}

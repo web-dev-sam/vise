@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentStatusBadge.vue",
+      "action": "create",
+      "why": "Dedicated coloured status-label component (AppointmentStatus -> Badge variant map) mirroring billing's InvoiceStatusBadge; lives in the scheduling slice, not shared/, because its name carries the domain noun and it has only one usage (README rules 5 & 7)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the inline <Badge> + local VARIANT_BY_STATUS map with the new AppointmentStatusBadge, so the day view shows the label the same way invoices do (single-source colour map, same reason to change)."
+    }
+  ],
+  "uncertain": [
+    "Home of the badge: I placed it inside AppointmentCard (the day view delegates each row to AppointmentCard, so that is where the status already renders). Invoices instead drop InvoiceStatusBadge directly into the list view's table cell. If the team wants the badge composed at the DayView.vue level rather than inside the card, DayView.vue would change too and AppointmentCard would stop rendering status.",
+    "Whether the new component should also absorb the separate 'Conflict' badge / a derived state the way InvoiceStatusBadge folds in an 'overdue' override. I left Conflict as its own badge (distinct concern: schedule collision vs. appointment lifecycle status), but this is a judgement call.",
+    "Colour mapping for 'cancelled': InvoiceStatusBadge maps its terminal 'void' state to the 'outline' variant and AppointmentCard currently maps 'cancelled' to 'outline' too; I would keep that, but a muted/destructive treatment for cancelled is plausible and I'm not certain which the team prefers."
+  ],
+  "questions": [
+    "Appointments already display a coloured status badge inline in AppointmentCard.vue \u2014 is the intent to refactor it into a dedicated component that matches the InvoiceStatusBadge pattern, or was the requester unaware the coloured label already exists (in which case there may be no visible change and nothing to build)?",
+    "Should the status label appear anywhere beyond the day view (e.g. the reschedule form, or the cross-slice ClientOverviewView), or is DayView the only surface in scope?",
+    "Any product-defined colour semantics for each status (scheduled / completed / cancelled), or do we keep the current variant mapping (default / success / outline)?"
+  ]
+}

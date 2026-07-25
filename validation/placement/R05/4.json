@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Add the canonical cross-slice call: import fetchUpcomingAppointments + AppointmentSummary from @slices/scheduling and, once the invoice loads, fetch the client's upcoming appointments (invoice.clientId) and expose the first as nextAppointment. Mirrors the existing @slices/scheduling join in useInvoiceList.ts."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Consume nextAppointment from the composable and render a small 'Next appointment' panel (start/duration/resource) inline from the AppointmentSummary, including the empty state."
+    }
+  ],
+  "uncertain": [
+    "Rendering the panel inline in InvoiceDetailView vs. a dedicated component. Inline is what README rule 6 / worked-example #2 prescribes until it grows; a real reusable widget would be *about* scheduling, so it would live in scheduling/ui and be exported from scheduling/index.ts \u2014 never created inside billing. AppointmentCard.vue can't be reused: it's private to scheduling and takes the core Appointment entity, not the public AppointmentSummary read model.",
+    "Where the clock ('now') comes from. fetchUpcomingAppointments(clientId, now) requires a Date. ClientOverviewView reads new Date() directly in the UI layer, so doing the same inside useInvoiceDetail is consistent (the no-clock rule only binds core/). But the data-layer queries take an injected now for determinism/testability, so the team may prefer passing now into the composable instead of reading it there.",
+    "Whether a test should accompany this. Tests live in apps/web/tests/ and currently cover only core rules + mappers; there is no UI/composable test precedent, so likely none is expected. But the 'next = first upcoming' selection and the empty state are real behavior \u2014 if a test is wanted it would be a new apps/web/tests/ file, not a co-located one (the structure test forbids extra files inside slices)."
+  ],
+  "questions": [
+    "Confirm the definition of 'next upcoming appointment': fetchUpcomingAppointments already returns only status==='scheduled' appointments strictly in the future (start > now), sorted ascending, so 'next' = the first. Is excluding cancelled/completed and today's already-started slots the intended meaning?",
+    "What should the panel show when the client has no upcoming appointment \u2014 a message like 'No upcoming appointment', or hide the panel entirely?",
+    "AppointmentSummary exposes resourceId as a raw id (ClientOverviewView shows it verbatim). Is displaying the raw resource id acceptable, or is a human-readable resource/staff name expected (which scheduling does not currently expose in its read model)?",
+    "Should the appointment be a link to the scheduling day/detail view, or purely a read-only display on the invoice page?"
+  ]
+}

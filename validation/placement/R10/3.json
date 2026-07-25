@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add a runtime read model (e.g. fetchRescheduleEnabled(customerId)) hitting a settings/entitlements endpoint so the flag is fetched at request time, never baked in at build/deploy."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/dto.ts",
+      "action": "modify",
+      "why": "Add the server-shape (snake_case) DTO schema for the entitlement/settings response; DTOs must stay in data/."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mappers.ts",
+      "action": "modify",
+      "why": "Map the entitlement DTO to a core-friendly value so the raw DTO never leaks upward into ui/core."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "Add an MSW handler returning the flag keyed per customer, so it can actually be flipped on/off in the mock backend without a redeploy."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/policy.ts",
+      "action": "modify",
+      "why": "Thread the entitlement into canReschedule/validateReschedule so the pure domain is the single source of truth for whether the flow is permitted and owns the user-facing message."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useRescheduleEnabled.ts",
+      "action": "create",
+      "why": "New composable that loads the entitlement for the current customer and exposes it reactively to the view (the ui-boundary that reads runtime state)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Accept the entitlement and pass it into validateReschedule so submit() also refuses when the flow is off, not just the button being hidden."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Consume the flag to show/hide the Reschedule button and RescheduleForm \u2014 the only UI surface that renders the reschedule flow."
+    }
+  ],
+  "uncertain": [
+    "Whether the fetch belongs in the existing data/queries.ts or a new data/entitlements.ts file \u2014 both are architecturally legal; queries.ts matches convention but this is arguably a distinct concern.",
+    "Whether a single boolean warrants the full DTO+mapper(+core type) ceremony, or whether it should also gain a core/types.ts entry to name the read model; the repo maps even trivial fields, so I leaned faithful over minimal.",
+    "Whether to add a dedicated useRescheduleEnabled composable or fold the flag load into the existing useDaySchedule \u2014 a separate composable keeps day-loading and entitlement concerns apart, but is one more file.",
+    "Whether RescheduleForm.vue also needs its own guard (belt-and-suspenders); I left it out because the button is hidden and core/policy refuses, but a reviewer may want it explicit.",
+    "Whether this should stay in-slice (rule 7: one feature, keep it in scheduling) or is the first of many per-customer entitlements that would justify a shared/app-level entitlements layer later."
+  ],
+  "questions": [
+    "What does 'per customer' mean here \u2014 the tenant/business using Vise, or the end-client (clientId like c-ana)? The app currently has no tenant/auth/session identity at all, and DayView isn't even client-scoped, so there is no customer id to key the flag on today.",
+    "Where does the on/off switch actually live server-side (feature-flag service, settings endpoint, entitlements API) and what is the endpoint path + response shape? The frontend can only read it; the real toggle must exist server-side for 'without deploying' to hold.",
+    "When the flag is off, should the reschedule UI be hidden entirely, or shown disabled with an explanatory message?",
+    "Refresh/caching expectations: is a normal fetch on view load enough, or must a flip take effect live (polling / cache invalidation) without a page reload?",
+    "Is this genuinely scheduling-only, or the first of several per-customer entitlements \u2014 which would change whether we build it in-slice now or invest in a reusable entitlements mechanism?"
+  ]
+}

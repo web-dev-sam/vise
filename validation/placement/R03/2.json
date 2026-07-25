@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/components/DateRangeFilter.vue",
+      "action": "create",
+      "why": "Generic two-date filter control (no domain nouns), duplicated into billing per rule 7 since this is only the 2nd same-reason usage, not yet promotable to shared/."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the filter at the top of the card and own the selected-range ref, mirroring how DayView owns its `day`."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Accept the selected range and expose an invoice list filtered by it (client-side over already-loaded invoices; no billing/data change needed)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/DateRangeFilter.vue",
+      "action": "create",
+      "why": "The same generic control duplicated into scheduling per rule 7 (duplication is cheaper than a premature shared abstraction at two usages)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the filter at the top and replace the fixed single `day` ref with a selected date range."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Take a date range instead of a single day and load/filter appointments across the whole range."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add fetchAppointmentsForRange(start,end); the existing fetchAppointmentsForDay only filters a single day, matching the pattern of keeping date filtering in the data layer."
+    }
+  ],
+  "uncertain": [
+    "shared/ vs duplicate at exactly two usages: README worked example #3 names shared/ui/date-range-picker/ as the home, but rule 7 and that same example say promote only at the 3rd same-reason usage. I chose the strict rule-7 reading (duplicate one DateRangeFilter.vue into each slice's ui/components/). If the team decides to promote instead, the two created .vue files collapse into a single shared/ui/date-range-picker/ (DateRangePicker.vue + index.ts) and the two slice copies disappear; structure tests pass either way (no domain noun in the name).",
+    "Which date the invoice filter acts on: Invoice has native issueDate and dueDate, but the list only displays the cross-slice 'generated from' appointment date. I assumed the composable filters client-side, but the target field (issueDate vs dueDate vs appointment/generated-from date) changes whether any billing/data query work is needed.",
+    "Whether scheduling range-filtering belongs in data/queries.ts (fetchAppointmentsForRange) or purely in useDaySchedule fetching-all-then-filtering. I put it in the query to match the existing fetchAppointmentsForDay pattern, but a composable-only approach would touch one fewer file.",
+    "Whether DayView.vue should still exist as a 'day' view once it filters a range, or be reframed \u2014 this affects the route name `day-view` / path `/schedule` and the seeded single-day double-booking demo the current view relies on."
+  ],
+  "questions": [
+    "Promote to shared/ now or duplicate per rule 7? Concretely: do we expect these two filters to always change together for the same reason, or do they just happen to look alike today (rule 6 'two components wearing one costume')? This single answer decides duplicate-vs-shared and the whole file list.",
+    "Which date field should the invoice-list filter match on \u2014 issueDate, dueDate, or the 'generated from' appointment start currently shown in the list? They are three different columns and only one is displayed today.",
+    "Does widening the appointment 'day view' to a date range change its identity \u2014 should the route name (`day-view`) / path (`/schedule`) and the seeded single-day double-booking demo be updated, or should the filter default to a single day with range as an option?",
+    "What are the default range values, and should the selected range persist in the URL query (Vue Router) so views are shareable/deep-linkable and survive refresh?",
+    "Do you want unit tests for the new filter/composable logic? There is currently no convention for testing views/composables (apps/web/tests/ covers only core, mappers, and structure), so this would establish new precedent."
+  ]
+}

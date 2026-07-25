@@ -1,0 +1,57 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free predicate (e.g. matchesInvoiceQuery/filterInvoices) \u2014 which invoice fields count as a match is domain knowledge and passes the delete-Vue test, so it belongs in core."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Own the search query ref, debounce it via @shared/lib/useDebounce, and expose the filtered invoices so the view stays declarative."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the search box using the existing @shared/ui/input primitive, v-model-bound to the composable's query ref."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add the equivalent pure appointment-match predicate/filter (searchable fields are scheduling domain knowledge)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Own the query ref, debounce it, and expose filtered appointments alongside the existing conflict logic."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the search box via @shared/ui/input bound to the composable's query ref."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new pure invoice filter predicate; core logic in this repo is unit-tested here."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new pure appointment filter predicate alongside existing core tests."
+    }
+  ],
+  "uncertain": [
+    "Whether the match predicate belongs in core/rules.ts or inline in each composable. I placed it in core because the README aggressively pushes pure, delete-Vue-safe logic downward and the searchable fields are domain-specific, but a filter this trivial could defensibly live as a computed in the UI composable.",
+    "Whether to reuse @shared/ui/input directly in both views vs. making a SearchInput. Rule 7 (3+ same-reason usages before promoting to shared/) says do NOT create a shared search component for only two call sites, and a name like SearchInput/InvoiceSearch would trip the no-domain-noun and duplication guards \u2014 so I reuse the raw Input primitive and add no shared files.",
+    "Whether 'without hammering the server' means the lists are already fully client-side (invoices via the cache store, appointments per-day) so debounce is just cheap client-side filtering \u2014 which is what I assumed \u2014 or the team actually wants a server-side search endpoint. If the latter, this instead touches each slice's data/queries.ts, data/mocks.ts and the MSW handlers, and the shape changes materially.",
+    "Scheduling's DayView only ever shows one day's (small) appointment set, so a filter-as-you-type box there is of marginal value and it's unclear it was even the intended second 'list view'."
+  ],
+  "questions": [
+    "Client-side filter over already-loaded data (my assumption), or a debounced server-side search query? This determines whether data/ and the MSW mocks are in scope at all.",
+    "Which fields should each search match? Invoices expose number/status/appointmentId and appointments expose clientId/resourceId/status, but neither has a human-readable client or resource name \u2014 matching would be against opaque ids unless a name lookup (a cross-slice/client data source) is expected.",
+    "Is the shared useDebounce default of 300ms the desired 'don't hammer' delay, or should it be configurable/different per view?",
+    "Should the search term be reflected in the URL/route query so it survives refresh and is linkable, or is ephemeral local state fine?",
+    "Are the 'two list views' definitively billing's InvoiceListView and scheduling's DayView? DayView is a per-day schedule rather than a conventional list, so I want to confirm it's the intended second target."
+  ]
+}

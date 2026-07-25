@@ -1,0 +1,108 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/identity/core/types.ts",
+      "action": "create",
+      "why": "Framework-free identity vocabulary: a Role union including \"finance\" and a CurrentUser entity."
+    },
+    {
+      "path": "apps/web/src/slices/identity/core/policy.ts",
+      "action": "create",
+      "why": "Pure reusable predicate (e.g. hasRole(user, role)) with no framework deps, mirroring other slices' core/policy.ts."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/dto.ts",
+      "action": "create",
+      "why": "Zod DTO for the current-user endpoint response, kept private to data/ like billing's dto.ts."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/mappers.ts",
+      "action": "create",
+      "why": "Maps the current-user DTO to the CurrentUser core entity so DTOs never leak upward."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/queries.ts",
+      "action": "create",
+      "why": "fetchCurrentUser() over @shared/http/transport with zod validation, following the data-layer pattern."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handler serving a mock current user + role, since there is no real auth backend today."
+    },
+    {
+      "path": "apps/web/src/slices/identity/data/store.ts",
+      "action": "create",
+      "why": "Pinia cache for the reactive current-user session shared across views (a cache-with-IO belongs in data/, not shared/)."
+    },
+    {
+      "path": "apps/web/src/slices/identity/ui/composables/useCurrentUser.ts",
+      "action": "create",
+      "why": "Public reactive accessor exposing the current user/role to consumers; also satisfies the required ui/ folder."
+    },
+    {
+      "path": "apps/web/src/slices/identity/routes.ts",
+      "action": "create",
+      "why": "Required 5th slice entry (empty route list \u2014 identity renders no pages); index must re-export it."
+    },
+    {
+      "path": "apps/web/src/slices/identity/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: Role type, useCurrentUser, mock handlers, routes."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/policy.ts",
+      "action": "modify",
+      "why": "canVoid must also require void authority (add a role/authority param); stays pure and framework-free."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Read the current role via the @slices/identity public alias and feed it into canVoid so canVoidInvoice reflects the finance gate."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Existing canVoid tests must be updated for the new finance-authority signature (currently assert only status)."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose the identity slice's mock handlers into the MSW worker (composition-root concern)."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate identityRoutes to keep the router's slice-route composition complete (empty set today)."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Register \"identity\" in the slices array so the toolchain/allow-list follows; CODEOWNERS-protected, needs architecture review."
+    },
+    {
+      "path": "apps/web/.oxlintrc.json",
+      "action": "modify",
+      "why": "Regenerated from architecture.config.ts to add the new slice's per-folder import rules (not hand-edited)."
+    },
+    {
+      "path": "apps/web/.dependency-cruiser.generated.json",
+      "action": "modify",
+      "why": "Regenerated allow-list that legalizes the billing\u2192identity edge via index.ts (not hand-edited)."
+    }
+  ],
+  "uncertain": [
+    "Biggest one: whether identity belongs in a NEW slice vs a session helper in shared/. \"user\"/\"role\"/\"finance\" are not in domainNouns so shared/ wouldn't trip the grep-test, but a stateful cache-with-an-IO-habit is explicitly not a shared/ primitive (per store.ts's own comment) \u2014 I lean toward a slice, but this is a real judgment call.",
+    "Slice name: identity vs access vs auth vs session \u2014 picked \"identity\" arbitrarily.",
+    "How the role reaches billing/core/policy.ts: pass a plain boolean authority, pass a Role value, or import identity's Role type into billing/core. I lean toward passing a boolean/value so billing/core stays ignorant of identity's vocabulary and avoids any cross-slice coupling in the most stable layer.",
+    "Whether InvoiceDetailView.vue changes at all: folding the role check into the existing canVoidInvoice computed means the view needs NO edit; a separate disabled/explained button for non-finance users would require modifying it.",
+    "Whether router/index.ts should wire identityRoutes given the route list is empty today (may be unnecessary)."
+  ],
+  "questions": [
+    "Where does the role actually come from \u2014 a real auth/session/JWT endpoint, or is a mocked current-user (MSW only) the expectation for now?",
+    "This adds a slice, which edits CODEOWNERS-protected files (architecture.config.ts + the generated configs) and requires architecture review. Is that acceptable, or is there an approved/intended home for identity I'm missing?",
+    "Should voiding also be enforced server-side (the voidInvoice mutation), or is hiding the button UI-only for now? UI gating alone is not a security boundary.",
+    "Role model: a single \"finance\" role, or a set of roles/permissions? Are there other roles in play today?",
+    "For non-finance users: hide the button entirely (as requested), or show it disabled with an explanation?"
+  ]
+}

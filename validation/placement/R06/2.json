@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Owns the rendered appointments list (plain refs, no store); add an optimistic patch-a-slot + rollback API that swaps the slot in-place and recomputes conflicts so the new time shows before the server responds."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Currently only returns the updated appointment after awaiting the mutation; restructure to apply the validated slot optimistically before the await and roll back (restore prior slot + surface error) when rescheduleAppointment throws/rejects."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/RescheduleForm.vue",
+      "action": "modify",
+      "why": "Instantiates useReschedule and today emits 'rescheduled' only on server success; wire the optimistic-apply/rollback seam (props/emit timing) so the day list updates on submit, not on response."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Composition point holding useDaySchedule; connect its optimistic API into the reschedule flow and drop the unconditional post-success refresh() that currently defers the visible change to the round-trip."
+    }
+  ],
+  "uncertain": [
+    "Placement of the optimistic state: kept it in useDaySchedule rather than introducing scheduling/data/store.ts. README says billing holds the deliberate 'one store' and scheduling intentionally has none, so a store felt like an unwarranted architecture change \u2014 but if the team wants reschedule state shared/cached across views, a scheduling store would be the more consistent home.",
+    "The exact coordination seam: useReschedule is owned by RescheduleForm while the list state is owned by DayView/useDaySchedule, so optimism has to cross a component boundary. Unsure whether to thread apply/rollback hooks down through RescheduleForm or lift useReschedule up into DayView; both touch the same 4 files but change which one holds the orchestration.",
+    "Whether a small pure core helper to apply a ProposedSlot to an Appointment is worth adding to core/ vs an inline object spread in the composable. Left it out; only mentioning in case the team prefers the mutation to be a named, tested core function.",
+    "data/mutations.ts left unchanged on the assumption a rejection already surfaces as a thrown error (httpTransport error or dto parse failure). If 'reject' can also mean a 200 with a validation body, mutations.ts would need to change too."
+  ],
+  "questions": [
+    "Should the optimistic update apply only to the DayView list, or also to the cross-slice read models (ClientOverviewView via fetchUpcomingAppointments / fetchAppointmentSummaries)? Those are separate fetches and would still show the old time until refetched.",
+    "What exactly counts as a server 'reject' that triggers rollback \u2014 any HTTP error, or also a success response whose returned start/end differs from what was requested (i.e. reconcile to server truth rather than the optimistic value)?",
+    "On rollback, should the RescheduleForm stay open showing the server error and re-highlight conflicts, and should optimistically-detected conflicts warn the user before the server call rather than after?"
+  ]
+}

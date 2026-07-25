@@ -1,0 +1,55 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure, framework-free matchesInvoiceQuery(invoice, query) predicate \u2014 which fields count as searchable is a domain decision, so it belongs in core (testable, no Vue)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Hold the search query ref, debounce it via @shared/lib/useDebounce, and expose a filteredInvoices computed built from the core predicate."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the @shared/ui/input search box bound to the query and iterate the debounced filtered list instead of the raw one."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/core/rules.ts",
+      "action": "modify",
+      "why": "Add a pure matchesAppointmentQuery(appointment, query) predicate mirroring billing, keeping searchable-field logic framework-free and testable."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Hold the search query ref, debounce it, and expose a filtered appointments computed using the core predicate."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the shared Input search box bound to the query and iterate the debounced filtered appointment list."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new matchesInvoiceQuery predicate (match/no-match, case-insensitivity, empty query) \u2014 final-phase test for the added core logic."
+    },
+    {
+      "path": "apps/web/tests/scheduling.core.test.ts",
+      "action": "modify",
+      "why": "Cover the new matchesAppointmentQuery predicate the same way."
+    }
+  ],
+  "uncertain": [
+    "Whether the match predicate belongs in core/rules.ts or inline in the composable. I chose core because 'which fields are searchable' is a domain decision and the README's example 1 routes new logic to core/rules.ts (plus core has existing test files). Counter-argument: a plain substring text filter is arguably generic presentational UI, in which case it could live purely in the composable and skip the two core-rules and two test-file edits.",
+    "Whether 'both list views' means InvoiceListView + DayView. DayView is scheduling's only list-like view but it's titled 'Day schedule' and shows one fixed day, not an obvious 'list'; the app-level ClientOverviewView renders two lists (unpaid invoices / upcoming appointments) but is a dashboard, not a filterable list. I assumed the two slice list views and excluded ClientOverviewView.",
+    "Whether filtering must stay client-side. Both views already load their full dataset client-side, so a debounced client-side filter never touches the server at all and satisfies 'without hammering the server' trivially; debounce then only guards recompute/future server use. If the team actually wants server-side search, data/queries.ts, data/mocks.ts, and (for billing) data/store.ts would also need changes and the debounce becomes load-bearing."
+  ],
+  "questions": [
+    "What should each search actually match on? Neither model carries human-readable text: Invoice has only number + clientId (no client name), and Appointment has only clientId + resourceId + times (no title/name). Do you want to match invoice number and appointment resource/client ids, or should the API/read-models first expose names to search against?",
+    "Is client-side filtering over the already-loaded lists acceptable, or do you require server-side search (which would add query params to data/queries.ts + MSW mocks + billing's cache store and make the debounce necessary rather than just prudent)?",
+    "Does 'both list views' mean the billing InvoiceListView and scheduling DayView specifically, or should the app-level ClientOverviewView dashboard lists get search boxes too?",
+    "Preferred debounce delay \u2014 is the shared useDebounce default of 300ms fine?"
+  ]
+}

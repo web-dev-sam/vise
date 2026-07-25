@@ -1,0 +1,218 @@
+{
+  "requests": [
+    {
+      "request_id": "R01",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "billing/core",
+        "billing/data",
+        "billing/ui"
+      ],
+      "disagreements": [],
+      "notes": "All five: billing core (types/rules[/policy]) + data (dto/mappers/mutations/mocks) + ui (composable/view). Tests ignored. B omits core/policy.ts but still lands billing/core via types+rules, so cells are identical. Debated inline-vs-DiscountCodeForm component and index.ts, but none acted on those, so no cell divergence."
+    },
+    {
+      "request_id": "R02",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "billing/data"
+      ],
+      "disagreements": [],
+      "notes": "Unanimous wire-only change absorbed by billing/data (dto/mappers/mocks). All flag that a genuine domain change would pull in core/ui, but none placed those files. billing.mappers.test.ts ignored per rule."
+    },
+    {
+      "request_id": "R03",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "billing/ui",
+        "scheduling/ui",
+        "scheduling/data"
+      ],
+      "disagreements": [],
+      "notes": "All duplicated a per-slice DateRangeFilter into each slice's ui/ (rule 7) rather than promoting to shared/ui \u2014 so no shared/primitives cell. All filter billing client-side (no billing/data) and add a scheduling/data range query. The shared-vs-duplicate debate was universal but every dev chose duplicate, so coordinates match."
+    },
+    {
+      "request_id": "R04",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "scheduling/ui"
+      ],
+      "disagreements": [],
+      "notes": "All create AppointmentStatusBadge.vue + modify AppointmentCard.vue, both scheduling/ui. None promoted to shared/ (domain noun) or touched DayView/core/index \u2014 single-cell agreement."
+    },
+    {
+      "request_id": "R05",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "billing/ui"
+      ],
+      "disagreements": [],
+      "notes": "All modify only useInvoiceDetail.ts + InvoiceDetailView.vue (billing/ui), consuming scheduling's already-public fetchUpcomingAppointments. All explicitly leave scheduling/index.ts unchanged (already exported) and render inline rather than a new component."
+    },
+    {
+      "request_id": "R06",
+      "coordinate_agreement": false,
+      "num_distinct_coordinate_sets": 2,
+      "consensus_coordinates": [
+        "scheduling/ui"
+      ],
+      "disagreements": [
+        {
+          "kind": "layer",
+          "competing_placements": [
+            "scheduling/core",
+            "scheduling/ui"
+          ],
+          "who_chose_what": "A adds a pure applyReschedule helper in scheduling/core/rules.ts on top of the four scheduling/ui files; B, C, D, E keep the optimistic patch entirely in scheduling/ui composables.",
+          "reasoning_each": "A: a framework-free, testable domain transform belongs in core even though it is essentially a spread. B/C/D/E: the patch is a trivial in-place object spread owned by the list composable (useDaySchedule); B and C explicitly weighed a core helper and rejected it as over-engineering."
+        }
+      ],
+      "notes": "Everyone touches useDaySchedule, useReschedule, DayView, RescheduleForm (all scheduling/ui). Only A promotes the projection into scheduling/core. mocks.ts rejection-path and test files are flagged by several but do not change cells (tests ignored)."
+    },
+    {
+      "request_id": "R07",
+      "coordinate_agreement": false,
+      "num_distinct_coordinate_sets": 3,
+      "consensus_coordinates": [
+        "audit/core",
+        "audit/data",
+        "audit/ui",
+        "audit/slice-root",
+        "app/app"
+      ],
+      "disagreements": [
+        {
+          "kind": "layer",
+          "competing_placements": [
+            "billing/data",
+            "scheduling/data",
+            "billing/ui",
+            "scheduling/ui"
+          ],
+          "who_chose_what": "A, C, D record the change in the existing slices' DATA layer (A via each slice's data/mocks.ts server handler; C, D via each slice's data/mutations.ts) \u2192 billing/data + scheduling/data. B records via the existing slices' UI composables (useInvoiceDetail, useReschedule) \u2192 billing/ui + scheduling/ui. E does BOTH: threads the actor through billing/scheduling ui composables+views AND appends the record in both data/mocks and data/mutations \u2192 billing/data, scheduling/data, billing/ui, scheduling/ui.",
+          "reasoning_each": "A/C/D: the authoritative record must be produced at the server/mutation choke point every change flows through (data layer). B: composable\u2192@slices/audit is the only documented cross-slice pattern and the composable holds before+after state. E: combines client-side actor threading in ui with server-authoritative recording in data."
+        },
+        {
+          "kind": "naming-only",
+          "competing_placements": [
+            "audit/* (named 'compliance')",
+            "audit/* (named 'audit')"
+          ],
+          "who_chose_what": "A named the new slice 'compliance'; B, C, D, E named it 'audit'.",
+          "reasoning_each": "Same normalized role (audit/change-log slice) so no coordinate-cell difference; A picked the business-capability name 'compliance', the others 'audit'."
+        }
+      ],
+      "notes": "Slice names 'compliance' (A) and 'audit' (B-E) normalized to one audit/change-log slice per instructions. All five create the full new slice (core+data+ui+slice-root) and all touch app/app (router+msw, some add layouts nav) \u2014 that plus the new slice is the consensus. E is a strict superset (union of data+ui recording). Config files outside src/ (architecture.config.ts, .oxlintrc.json, .dependency-cruiser.generated.json, vite.config.ts) match no coordinate rule and were excluded from set comparison; several devs list them but they do not affect cells. E's app/providers/currentActor.ts is app/app (already counted). No dev folded audit into billing/scheduling instead of a new slice, so there is no new-slice-vs-fold disagreement here."
+    },
+    {
+      "request_id": "R08",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "shared/primitives",
+        "app/app",
+        "billing/ui",
+        "scheduling/ui"
+      ],
+      "disagreements": [],
+      "notes": "Despite file-level variety (locale primitive named useLocale.ts/i18n.ts/locale.ts; label maps inline in the badge components vs separate per-slice ui/composables; some add app/providers/locale, some app/main, some app/views/ClientOverviewView, D adds shared/lib/format.ts, E adds package.json), every set collapses to the same four cells. All locale mechanisms land in shared/primitives; all app bootstrap/ClientOverview edits land in app/app; all status label edits stay in billing/ui + scheduling/ui. package.json (E) is a config outside src/, excluded. Coordinate-level agreement."
+    },
+    {
+      "request_id": "R09",
+      "coordinate_agreement": false,
+      "num_distinct_coordinate_sets": 3,
+      "consensus_coordinates": [
+        "billing/ui",
+        "app/app"
+      ],
+      "disagreements": [
+        {
+          "kind": "new-slice-vs-fold",
+          "competing_placements": [
+            "identity/core",
+            "identity/data",
+            "identity/ui",
+            "identity/slice-root",
+            "shared/primitives",
+            "app/app"
+          ],
+          "who_chose_what": "A, C, D, E stand up a new 'identity' slice (core+data+ui+slice-root) consumed via @slices/identity. B folds identity into shared/lib (roles + useCurrentUser \u2192 shared/primitives) plus an app/providers session seed (app/app), creating no new slice.",
+          "reasoning_each": "A/C/D/E: current-user+roles is a business capability with its own reason-to-change and matches the canonical cross-slice consumption pattern, worth the CODEOWNERS-gated architecture.config.ts edit. B: avoids architecture review \u2014 'user/role/finance' are not banned domain nouns, so a shared/lib reactive reader + app-provider seed is sufficient."
+        },
+        {
+          "kind": "layer",
+          "competing_placements": [
+            "billing/core",
+            "billing/ui"
+          ],
+          "who_chose_what": "B, C, D make voiding role-aware in billing/core/policy.ts (canVoid gains a role/authority param) in addition to billing/ui; A, E keep the finance gate only in the billing/ui composable (useInvoiceDetail).",
+          "reasoning_each": "B/C/D: 'finance may void' is a pure business rule and belongs in core/policy with the role passed in as a param. A/E: putting it in core would pull identity's Role type sideways into billing/core (a layering smell), so they compose canVoid + the role check in the ui composable."
+        }
+      ],
+      "notes": "Three sets: A/E = {identity core+data+ui+slice-root, billing/ui, app/app}; C/D = A/E plus billing/core; B = {billing/core, billing/ui, shared/primitives, app/app} (no identity slice). Consensus is only billing/ui + app/app. architecture.config.ts and generated configs (outside src/) excluded from cells. All identity-slice devs land an empty routes.ts + index.ts \u2192 identity/slice-root."
+    },
+    {
+      "request_id": "R10",
+      "coordinate_agreement": false,
+      "num_distinct_coordinate_sets": 2,
+      "consensus_coordinates": [
+        "scheduling/data",
+        "scheduling/ui"
+      ],
+      "disagreements": [
+        {
+          "kind": "layer",
+          "competing_placements": [
+            "scheduling/core",
+            "scheduling/ui"
+          ],
+          "who_chose_what": "C, D, E additionally thread the enabled flag into scheduling/core/policy.ts (canReschedule/validateReschedule); A, B keep the flag in scheduling/data (fetch: dto/queries[/mappers]/mocks) + scheduling/ui (gate the button/submit) only, leaving core untouched.",
+          "reasoning_each": "C/D/E: make the pure domain the single source of truth so submit() refuses when off and carries the 'unavailable' message. A/B: an externally-fetched feature flag is runtime availability config, not a domain invariant like the 24h rule, so core stays pure and gating happens in data+ui."
+        }
+      ],
+      "notes": "All five add the flag fetch in scheduling/data and gate in scheduling/ui (DayView + a reschedule-availability composable, whether new useRescheduleEnabled or folded into useDaySchedule). The only cell split is presence/absence of scheduling/core/policy.ts. Test files ignored."
+    },
+    {
+      "request_id": "R11",
+      "coordinate_agreement": false,
+      "num_distinct_coordinate_sets": 2,
+      "consensus_coordinates": [
+        "billing/core",
+        "billing/data",
+        "billing/ui",
+        "billing/slice-root",
+        "scheduling/data",
+        "scheduling/slice-root"
+      ],
+      "disagreements": [
+        {
+          "kind": "other",
+          "competing_placements": [
+            "app/app"
+          ],
+          "who_chose_what": "B and C add a 'Billing periods' nav link in app/layouts/DefaultLayout.vue (app/app); A, D, E add only billing/routes.ts and rely on the app router auto-concatenating slice routes, touching no app/ file.",
+          "reasoning_each": "B/C: which routes surface in the shell/nav is an app composition concern, so the nav link is an explicit app edit. A/D/E: the slice owns its route paths in routes.ts and the app router picks them up automatically, so no app-shell edit was listed."
+        }
+      ],
+      "notes": "Universal agreement to FOLD billing periods into the existing billing slice (core+data+ui+routes) and to add a scheduling/data range query re-exported via scheduling/index.ts (scheduling/slice-root) \u2014 nobody proposed a new 'billing-periods' slice despite debating it. Only cell split is the app/app nav link (B,C). Within-cell variations (B's createBillingPeriod mutation, A/C's billing/index.ts edit, A's SummaryTable / B's TotalsCard component) all stay inside already-counted billing cells. Tests ignored."
+    },
+    {
+      "request_id": "R12",
+      "coordinate_agreement": true,
+      "num_distinct_coordinate_sets": 1,
+      "consensus_coordinates": [
+        "billing/core",
+        "billing/ui",
+        "scheduling/core",
+        "scheduling/ui"
+      ],
+      "disagreements": [],
+      "notes": "Unanimous: a pure match predicate in each slice's core/rules.ts, debounced search state in each slice's ui composable, and the shared Input rendered in each view (billing/ui + scheduling/ui). Every dev flagged core-vs-composable for the predicate but all chose core, and all reused @shared/ui/input rather than a new shared SearchInput \u2014 so no shared/primitives cell and full agreement. Core test files ignored."
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/types.ts",
+      "action": "modify",
+      "why": "Add an applied-discount representation (code + resolved amount/bps) to the Invoice entity; framework-free state the total math reads from."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add invoiceDiscountMinor and fold the discount into invoiceTotalMinor/summarize so the reduced total is a pure, tested rule."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/policy.ts",
+      "action": "modify",
+      "why": "Add a canApplyDiscount predicate so the 'when is a discount allowed' rule (e.g. not on paid/void) lives with the other can* policies."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "Add the server discount field to the invoice schema and a request/response schema for the apply-code endpoint; DTOs stay in data/."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "Map the discount DTO<->core both ways so the mapper keeps earning its keep and round-trips."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mutations.ts",
+      "action": "modify",
+      "why": "Add applyDiscountCode(id, code): the server round-trip that validates the code and returns the updated invoice."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "Add the apply-discount MSW handler plus a code->discount table, and seed the discount field on existing invoice DTOs so the UI has real data."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Expose the discount in totals and add an applyCode action with pending/invalid-code error state for the view to bind."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Add the code-entry field + Apply button (shared Input/Button/Alert) and a Discount row in the totals block."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Cover discount math in invoiceTotalMinor/summarize and the canApplyDiscount policy."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Cover the discount DTO<->core mapping and round-trip."
+    }
+  ],
+  "uncertain": [
+    "Whether the discount code deserves its own core file (core/discount.ts for code resolution/validation) instead of folding into types.ts + rules.ts. Code validation is arguably a distinct reason-to-change, but README worked example #1 sets the precedent of folding discount into existing core files, so I followed that.",
+    "Whether policy.ts is the right home for canApplyDiscount vs. keeping it inside rules.ts. I placed it in policy.ts to match the existing can*(invoice) predicates, but it's a judgement call.",
+    "I deliberately did NOT modify ui/components/InvoiceLinesTable.vue. README example #1 assumes a per-line discountBps and says to add a column there, but a discount *code* is invoice-level and belongs in the totals summary, not the per-line table. If product actually wants per-line discounts, that file would change instead of much of the above.",
+    "Whether data/queries.ts and billing/index.ts need touching. If the invoice list / client overview must show the discounted total, summarize() already recomputes it so no change is needed; but if the list needs a separate 'discounted' flag or the discount surfaced as a new public read-model field, queries.ts and index.ts would also change."
+  ],
+  "questions": [
+    "Is the discount a percentage or a fixed money amount, and does it apply to the invoice total or per line? (Drives the core representation and rules math.)",
+    "Where are codes validated: server-only (client just sends the code and trusts the returned invoice) or does the client need a code catalogue? I assumed server-side validation via a mutation.",
+    "Does applying a code persist on the invoice server-side, or is it ephemeral UI-only state? I assumed it persists (hence the mutation + DTO field).",
+    "Should the discount be applied before or after tax? This materially changes invoiceTotalMinor.",
+    "Can multiple codes stack, can a code be removed once applied, and are there constraints (expiry, minimum total, one-per-invoice)?",
+    "Which invoice statuses may receive a discount (e.g. draft/issued only, never paid/void)?",
+    "Should the invoice list view and the app-level client overview reflect the discounted total, or only the detail page?"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "completed": true,
+  "all_checks_pass": true,
+  "checks_run": [
+    "vp lint (exit 0)",
+    "vue-tsc --noEmit -p tsconfig.json (exit 0)",
+    "depcruise src --config .dependency-cruiser.cjs --ignore-known (exit 0, 85 modules, no violations)",
+    "vp test run (exit 0, 28 tests / 5 files)",
+    "vp run --filter @vise/web verify:enforcement (exit 0, all 13 rules bit)"
+  ],
+  "folders_touched": [
+    "apps/web/src/slices/billing/data/ (removed store.ts Pinia store; added invoiceCache.ts plain module-level reactive composable)",
+    "apps/web/src/slices/billing/ui/composables/ (useInvoiceList.ts consumer, internal impl only)",
+    "apps/web/src/app/ (main.ts: removed createPinia)",
+    "apps/web/ (package.json: removed pinia dependency)"
+  ],
+  "escape_hatches_used": "none",
+  "unexpected_files_changed": "none \u2014 pnpm-lock.yaml still lists pinia@4.0.2 (a synthetic version not resolvable offline) so the lockfile could not be pruned in-sandbox; it is NOT CODEOWNERS-protected and does not gate any of the five checks (no frozen install runs).",
+  "notes": "Pinia fully replaced by plain composables. store.ts (useInvoiceCacheStore = defineStore) deleted; data/invoiceCache.ts reimplements identical cached-state behaviour with module-scope refs (invoices/loading/loaded) + guarded ensureLoaded(), exposing InvoiceCache interface and useInvoiceCache(). Shared cached reactive state across views preserved via module-level singletons. UI PUBLIC SIGNATURE: NO ui/ file public signature changed \u2014 useInvoiceList.ts keeps its exported InvoiceListState interface and useInvoiceList(): InvoiceListState signature identical; only internal implementation changed (useInvoiceCache() destructuring instead of useInvoiceCacheStore()+storeToRefs). The new InvoiceCache interface/useInvoiceCache return type live in data/, not ui/."
+}

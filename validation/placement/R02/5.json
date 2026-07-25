@@ -1,0 +1,36 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "The zod DTO schemas ARE the wire contract; rename the renamed server fields and move the line-items array under its new extra nesting level here."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "The mapper is where the wire change is absorbed \u2014 read the renamed keys and the deeper lines path so core entities stay unchanged (DTOs never leak upward)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "MSW seed data is hand-written in server shape, so it must adopt the new field names and the deeper line-item nesting or it will fail schema validation."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Its inline InvoiceDto fixture and round-trip assertions are literal server-shape objects that must match the renamed fields and new nesting."
+    }
+  ],
+  "uncertain": [
+    "I am treating this as a wire-only change, so core/types.ts, core/rules.ts, core/policy.ts, ui/, queries.ts and mutations.ts stay untouched \u2014 that's the mapper's whole purpose (README worked-example 1 keeps API-shape changes inside data/). This holds ONLY if the domain model isn't meant to change; if product wants the extra nesting reflected in the Invoice entity itself, core + rules + ui would also move.",
+    "billing.mappers.test.ts lives under apps/web/tests/, not src/. It genuinely must change (its fixture is a literal DTO), but I'm unsure whether the team scopes test updates into 'implement this' or treats them as a separate step.",
+    "queries.ts/mutations.ts import invoiceDtoSchema by name only; they need no edit as long as the exported schema/type identifiers keep their current names \u2014 an edit would be required if the rename extends to the exported symbol names."
+  ],
+  "questions": [
+    "What is the exact old\u2192new mapping for the renamed fields, and what is the precise new key/path the line items nest under (e.g. lines -> line_items.items)?",
+    "Is this strictly a wire/DTO change, or should the extra nesting and renames also surface in the billing core domain model?",
+    "Does the /api/invoices/:id/void PATCH response return the same new shape (mocks.ts returns an InvoiceDto for it), so it needs updating too?",
+    "Is only the invoice API changing, or does scheduling's DTO shape change as well?",
+    "Are any renamed fields ones the mapper currently drops/derives, or is it a straight 1:1 rename of existing fields?"
+  ]
+}

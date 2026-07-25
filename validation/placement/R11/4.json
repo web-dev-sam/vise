@@ -1,0 +1,99 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/types.ts",
+      "action": "modify",
+      "why": "Add framework-free BillingPeriod entity (id, name, start, end) and a BillingPeriodSummary read model carrying invoice/appointment counts and totals."
+    },
+    {
+      "path": "apps/web/src/slices/billing/core/rules.ts",
+      "action": "modify",
+      "why": "Add pure aggregation: filter invoices by a period's date range and sum totals-per-period (Decimal, no float), plus a summarizePeriod projection."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "Add billingPeriodDtoSchema (server shape: snake_case, ISO date strings) for period definitions; stays inside data/."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "Add toBillingPeriod mapping the period DTO down to the core entity; DTO never leaks upward."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/queries.ts",
+      "action": "modify",
+      "why": "Add fetchBillingPeriods() and a billing-only invoices-in-range fetch feeding the period read model."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "Seed period definitions in server shape and add the GET /api/billing-periods MSW handler."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useBillingPeriods.ts",
+      "action": "create",
+      "why": "Cross-slice composition point (mirrors useInvoiceList): join a period's invoices with scheduling appointment summaries via @slices/scheduling and compute totals."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/BillingPeriodListView.vue",
+      "action": "create",
+      "why": "Finance-facing list of named periods with per-period totals."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/BillingPeriodDetailView.vue",
+      "action": "create",
+      "why": "One period drill-down: its appointments, the invoices raised, and totals."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/BillingPeriodSummaryTable.vue",
+      "action": "create",
+      "why": "Reusable totals/rows table for periods \u2014 a new reason to change, so a new component rather than overloading InvoiceLinesTable."
+    },
+    {
+      "path": "apps/web/src/slices/billing/routes.ts",
+      "action": "modify",
+      "why": "Add /billing-periods (list) and /billing-periods/:id (detail) route records; app router concatenates them automatically."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add fetchAppointmentsInRange(start,end) public read model returning AppointmentSummary[] for appointments that happened within a period."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/index.ts",
+      "action": "modify",
+      "why": "Re-export fetchAppointmentsInRange so billing can consume it through scheduling's public surface (never a deep import)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/index.ts",
+      "action": "modify",
+      "why": "Expose BillingPeriod/BillingPeriodSummary types (and query if app-level overview needs them); routes already flow via billingRoutes."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Add unit tests for the new pure period-aggregation rules (range filtering + totals)."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Add coverage for the toBillingPeriod DTO->core mapper."
+    }
+  ],
+  "uncertain": [
+    "Where the invoices+appointments join lives: I placed it in a ui/composable to match the canonical useInvoiceList precedent, but the depcruise allow-list would also permit billing/data/queries.ts to import @slices/scheduling. Chose the composable for consistency.",
+    "Whether billing/index.ts actually needs new exports \u2014 only required if the app ClientOverviewView (or another slice) must render period data; a self-contained billing feature needs no index change beyond the already-exported routes.",
+    "Whether a separate BillingPeriodSummaryTable.vue is warranted vs. rendering the table inline in the views; depends on whether list and detail share the same table (rule 6/7).",
+    "Keeping period logic in core/rules.ts rather than a new core file \u2014 core/ allows multiple files, but I avoided proliferation; a dedicated core/period.ts is defensible if rules grow.",
+    "Whether periods are user-managed (needs billing/data/mutations.ts + create/edit UI) or derived from a fixed calendar \u2014 I assumed read-only definitions from the server."
+  ],
+  "questions": [
+    "Are billing periods created/edited by Finance (CRUD + a create/close endpoint), or are they fixed/derived (e.g. calendar months)? This decides whether we add mutations + editing UI.",
+    "'Invoices raised for them' \u2014 do we group invoices by issueDate falling in the range, or by the appointmentId of appointments that occurred in the range? The two give different memberships.",
+    "'Appointments that happened in it' \u2014 only status=completed, or any appointment whose start falls in the range regardless of status (scheduled/cancelled)?",
+    "Totals: invoices carry a per-invoice currency \u2014 should a period show per-currency totals, or is a single currency guaranteed per period?",
+    "Can periods overlap / can one invoice or appointment belong to more than one period, and must ranges be contiguous?",
+    "Where should this surface in navigation (own top-level route vs. on the client overview), and is there any Finance-only access/role gating expected?"
+  ]
+}

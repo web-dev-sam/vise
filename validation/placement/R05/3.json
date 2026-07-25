@@ -1,0 +1,26 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "Add the cross-slice join: import fetchUpcomingAppointments + AppointmentSummary from the @slices/scheduling public alias (mirroring useInvoiceList.ts), fetch by invoice.clientId with a now Date, and expose the next AppointmentSummary as new state."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+      "action": "modify",
+      "why": "Render the 'next upcoming appointment' panel from the summary the composable now returns, including the no-upcoming-appointment empty state."
+    }
+  ],
+  "uncertain": [
+    "Whether to introduce a dedicated 'next appointment' component vs rendering inline in the billing view. Per the constitution (rule 5 + README example 2) such a component is *about* scheduling, so it may NOT be copied into billing/ui; a small panel renders inline in the billing view, but if it grows it belongs in scheduling/ui and must be exposed via scheduling/index.ts. I chose inline; genuinely unsure how much display logic this will accrue.",
+    "Whether a test belongs in the file list. apps/web/tests/ holds only pure core/mappers tests (billing.core, billing.mappers, scheduling.core) \u2014 there's no precedent or visible harness for testing Vue composables/views, so the join logic (currently the only new logic) has no natural home to test without introducing component-test infra.",
+    "scheduling/index.ts is intentionally NOT in the list: fetchUpcomingAppointments and AppointmentSummary are already exported, and Invoice already has clientId, so no scheduling-side or billing-core changes are needed. The README hedged 'possibly scheduling/index.ts'; based on the actual code it isn't."
+  ],
+  "questions": [
+    "Does 'next upcoming appointment' mean strictly the single next one (summary[0]) or a short list of the next few? fetchUpcomingAppointments returns all future scheduled appointments sorted ascending.",
+    "Confirm 'the client' = the invoice's clientId (that's the only client the invoice references). No client name is available on the Invoice or AppointmentSummary \u2014 only ids/resourceId \u2014 so what exactly should the panel display (start datetime, duration, resourceId)? Do we need a client/appointment display name that neither slice currently exposes?",
+    "What copy/behavior for the empty state when the client has no upcoming appointment (e.g. c-ben in the seed, whose only appointment is past/completed)?",
+    "Is 'upcoming' correctly defined as status === 'scheduled' AND start > now (what fetchUpcomingAppointments already filters)? Should completed/cancelled or in-progress appointments ever count?",
+    "Where should 'now' come from \u2014 client clock (new Date() in the composable) is fine for a mock, but is there a server/timezone concern for the real API?"
+  ]
+}

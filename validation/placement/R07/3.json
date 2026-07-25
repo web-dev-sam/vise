@@ -1,0 +1,108 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/compliance/core/types.ts",
+      "action": "create",
+      "why": "Framework-free AuditEntry entity (id, entityType 'invoice'|'appointment', entityId, actorId/actorName, occurredAt, field-level before/after changes) \u2014 the 'who/when/what' modelled as pure domain."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/core/rules.ts",
+      "action": "create",
+      "why": "Pure helpers to summarize/format a change diff and sort/group entries for display, with no framework dependency."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/data/dto.ts",
+      "action": "create",
+      "why": "Server-shape AuditEntryDto (snake_case, ISO dates, string ids) + zod schema; never escapes data/."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/data/mappers.ts",
+      "action": "create",
+      "why": "Maps AuditEntryDto <-> core AuditEntry (parse dates, normalize change shape); keeps DTOs from leaking upward."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/data/queries.ts",
+      "action": "create",
+      "why": "Typed read: fetchChangeLog() / fetchChangeLogFor(entityType,id) over GET /api/audit-log via httpTransport, mapping DTO->core."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/data/mocks.ts",
+      "action": "create",
+      "why": "MSW handler for GET /api/audit-log plus the in-memory audit store and seed data, so the trail is real under the mock API."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/ui/composables/useChangeLog.ts",
+      "action": "create",
+      "why": "View state that loads the change log (optionally filtered by entity) for the compliance screen."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/ui/components/ChangeLogTable.vue",
+      "action": "create",
+      "why": "Presentational table rendering one row per change: actor, timestamp, entity, and old->new values."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/ui/views/ChangeLogView.vue",
+      "action": "create",
+      "why": "The compliance-facing page assembling the composable + table into a browsable audit trail."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/routes.ts",
+      "action": "create",
+      "why": "This slice's route definition(s), e.g. /compliance/changes."
+    },
+    {
+      "path": "apps/web/src/slices/compliance/index.ts",
+      "action": "create",
+      "why": "The slice's only public surface: re-export routes, the read-model query, the AuditEntry type, and the mock handlers."
+    },
+    {
+      "path": "architecture.config.ts",
+      "action": "modify",
+      "why": "Add 'compliance' to the `slices` array (and 'audit'/'compliance' to domainNouns) so the toolchain and structure test recognize the new slice \u2014 CODEOWNERS-protected, needs architecture review."
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "action": "modify",
+      "why": "Add the explicit `@slices/compliance` -> index.ts alias; the per-slice aliases are enumerated here (tsconfig's `@slices/*` glob already covers it, so tsconfig needs no change)."
+    },
+    {
+      "path": "apps/web/src/app/router/index.ts",
+      "action": "modify",
+      "why": "Concatenate `complianceRoutes` into the app route table (composition root)."
+    },
+    {
+      "path": "apps/web/src/app/providers/msw.ts",
+      "action": "modify",
+      "why": "Compose `complianceMockHandlers` into the MSW worker alongside billing/scheduling."
+    },
+    {
+      "path": "apps/web/src/app/layouts/DefaultLayout.vue",
+      "action": "modify",
+      "why": "Add a nav link to the compliance change-log view."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "Make the void-invoice mock handler append an audit entry when it applies the change, so recording happens at the (mock) server mutation boundary."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "Make the reschedule mock handler append an audit entry (old vs new start/end) so appointment changes are captured server-side."
+    }
+  ],
+  "uncertain": [
+    "Whether change-recording belongs in a new `compliance` slice at all vs. being purely a backend concern the frontend only reads. I modelled it as a read-only slice + captured writes in the existing mock handlers, because in a real system the server records the trail and the frontend just displays it. If the team already has (or plans) a backend audit service, the FE work collapses to just the read/display slice and the two mocks changes disappear.",
+    "The recording seam in this MOCK-only repo is genuinely awkward: the audit store is one shared server-side log, but billing/scheduling mock handlers live in different slices and the allow-list forbids data/->data/ cross-slice imports (only via index.ts). Having each slice's mock write into compliance's store would either couple slices or duplicate a store. In a real backend this is a non-issue; here it may push toward a shared mock/server seam I'm not sure the architecture wants.",
+    "Slice naming: I chose `compliance` (a business capability, matching billing/scheduling). It could instead be `audit`. Also unsure whether 'audit'/'compliance' should be added to `domainNouns`.",
+    "Whether billing/scheduling `data/mutations.ts` need to change to send actor context on the request. If the server derives the actor from the auth session, they don't; if the client must supply 'who', they do. Left out of the list pending the actor decision below."
+  ],
+  "questions": [
+    "'Who did it' \u2014 there is currently NO user/actor/auth/session concept anywhere in the codebase (grep found none). Where does actor identity come from? Is there an auth/session we integrate with, and should a shared or app-level current-user concept be introduced first? This blocks the 'who' requirement.",
+    "Is this recorded on the backend (preferred, authoritative) or must the frontend produce/submit audit entries? This determines whether the two mocks/mutations changes are real or just demo scaffolding.",
+    "Scope of 'every change': only the changes the app currently makes (void invoice, reschedule appointment), or all future mutating actions too? Should there be a general convention so new mutations are automatically audited rather than each remembering to log?",
+    "'What changed' granularity: full field-level before/after diffs, or just an action label (e.g. 'invoice voided')? Void has no obvious field diff; reschedule does.",
+    "Who consumes this \u2014 an in-app compliance view (as I assumed, with a route + nav link), an export/report, or an external SIEM/log sink? That changes whether the UI files are needed at all.",
+    "Retention/immutability/access-control expectations for a compliance record (append-only, who may view it) \u2014 relevant if any of this is enforced client-side."
+  ]
+}

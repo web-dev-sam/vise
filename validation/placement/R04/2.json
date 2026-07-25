@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentStatusBadge.vue",
+      "action": "create",
+      "why": "Dedicated status badge mirroring billing's InvoiceStatusBadge.vue \u2014 encapsulates the AppointmentStatus\u2192Badge-variant colour lookup so the day view matches how invoices present status."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the inline <Badge> + local VARIANT_BY_STATUS map with the new AppointmentStatusBadge component so the day view (which renders this card) shows the status the same way invoices do."
+    }
+  ],
+  "uncertain": [
+    "Whether a new AppointmentStatusBadge component is even wanted: AppointmentCard.vue already renders a coloured, variant-mapped status Badge, so extracting one is an architectural-consistency refactor (parallel to InvoiceStatusBadge), not net-new UI. Under README rule 7 a single same-reason usage would normally be left inline/duplicated, so this extraction is arguably premature.",
+    "Whether the badge should be rendered directly in DayView.vue rather than inside AppointmentCard.vue \u2014 DayView delegates each appointment to AppointmentCard, so I placed it in the card, but 'in the day view' could be read as the view itself.",
+    "Whether the invoice parity is meant to include a derived/override state (InvoiceStatusBadge has an `overdue` override) \u2014 appointments have no analogous derived status today, so I assumed a plain status\u2192variant mapping."
+  ],
+  "questions": [
+    "The day view already shows a coloured appointment status label (AppointmentCard.vue renders a Badge with scheduled=default, completed=success, cancelled=outline). Was this ticket filed against an older state, or is the real ask to refactor it into a dedicated AppointmentStatusBadge component for consistency with InvoiceStatusBadge?",
+    "Should appointment statuses reuse the exact same colour semantics as invoices (e.g. success=green for completed/paid, outline for cancelled/void), or is a scheduling-specific colour mapping expected?",
+    "Is there any derived state to surface (e.g. a 'conflict' or 'past-due'/'no-show' style override, mirroring the invoice 'overdue' override), or strictly the three literal AppointmentStatus values?"
+  ]
+}

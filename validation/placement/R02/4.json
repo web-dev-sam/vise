@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "DTOs are the server shapes; the renamed fields and the deeper line-item nesting change the zod schemas here \u2014 this is the layer that 'changes when the API changes'."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "toInvoice/toInvoiceDto read the DTO by key and reach dto.lines; they must absorb the renames and the extra nesting level so core/ stays untouched."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "MSW seed data is authored in server shape (InvoiceDto) and is zod-parsed on fetch, so it must match the new field names and nested lines or every query throws."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Its inline InvoiceDto fixture hardcodes the old field names and flat lines; update it to the new shape (this is exactly the test that guards the mapping)."
+    }
+  ],
+  "uncertain": [
+    "Whether 'one level deeper' warrants a new named wrapper schema/type in dto.ts (e.g. an InvoiceLinesEnvelope) vs. an inline nested object \u2014 either way it stays in dto.ts, but I can't pick the exact shape without the spec.",
+    "queries.ts uses z.array(invoiceDtoSchema) for GET /api/invoices; I assume only the line-item payload nests deeper, not the list envelope. If the list response itself gains a wrapper, queries.ts would also need a change.",
+    "I deliberately left core/{types,rules,policy}.ts and all of ui/ unchanged on the premise that the mapper insulates them (the architecture's central claim). If a rename is meant to propagate into core vocabulary too, core/types.ts and its dependents would also change."
+  ],
+  "questions": [
+    "What is the exact old->new field rename map, and what is the new nesting key/shape for line items (what wraps the current 'lines' array, and what is the wrapper called)?",
+    "Does only the line-item nesting change, or does the top-level invoice envelope (and the list endpoint) also change?",
+    "Do all three endpoints move to the new shape at once \u2014 GET /api/invoices, GET /api/invoices/:id, and the PATCH .../void response \u2014 or is it a phased/versioned rollout where both shapes must be accepted for a while?",
+    "Is this billing-only, or does the scheduling appointment DTO (which shares client_id/appointment_id join keys with billing seed data) also change?"
+  ]
+}

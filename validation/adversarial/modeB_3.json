@@ -1,0 +1,63 @@
+{
+  "findings": [
+    {
+      "title": "Framework-free `core/` reads the wall clock: impure, non-deterministic domain rule that no import-based check can see",
+      "what_a_dev_would_write": "To light up the existing `overdue` prop on the invoice detail badge, a tired dev adds a no-arg convenience to billing/core/rules.ts: `export function isCurrentlyOverdue(invoice: Invoice): boolean { return isOverdue(invoice, new Date()); }` and wires it through useInvoiceDetail.ts (an `overdue` computed) into InvoiceDetailView.vue (`:overdue`). It feels harmless \u2014 'saves every caller from threading a today value.'",
+      "files": [
+        "apps/web/src/slices/billing/core/rules.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+        "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue"
+      ],
+      "why_violates_spirit": "Constitution rule 4 ('domain core is framework-free') is really about a pure, deterministic, testable core \u2014 the sibling `isOverdue(invoice, today)` exists precisely so a clock is never read inside core, and rules.ts says so verbatim: 'today is passed IN so this stays pure and testable \u2014 never read a clock here.' `new Date()` reintroduces ambient, non-deterministic I/O into the layer that must be the most stable and the most testable. The whole enforcement stack only understands *imports* (npm allow-list, oxlint no-restricted-imports, depcruise edges); `new Date()`/`Date.now()`/`Math.random()` are JS builtins with no import, so the impurity is completely invisible to every tool while flatly violating the layer's reason to exist.",
+      "checks_run": [
+        "cd /home/wds/vise-mb3 && vp lint",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd /home/wds/vise-mb3/apps/web && vp test run",
+        "cd /home/wds/vise-mb3 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "`core-is-framework-free` (depcruise) + `core/` no-restricted-imports (oxlint) \u2014 both only bite on imports. Nothing enforces core *purity* (no ambient clock/random/global state), so the guarantee 'delete Vue and core still behaves identically and deterministically' is unenforced. A lint against `new Date(`/`Date.now(`/`Math.random(` under `slices/*/core/**` would catch it."
+    },
+    {
+      "title": "Cross-domain status vocabulary smuggled into the global `shared/` primitive layer under a domain-noun-free name",
+      "what_a_dev_would_write": "Both the invoice badge and the appointment card render a raw status string. A dev 'consolidates' this into shared/lib/format.ts: a `STATUS_LABELS` map hardcoding `draft/issued/paid/void` (billing) AND `scheduled/completed/cancelled` (scheduling) plus `export function formatStatusLabel(status: string)`, then imports it into billing/ui InvoiceStatusBadge.vue and scheduling/ui AppointmentCard.vue. Feels like DRY 'presentation formatting, same as formatMoney/formatDate.'",
+      "files": [
+        "apps/web/src/shared/lib/format.ts",
+        "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+        "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue"
+      ],
+      "why_violates_spirit": "Rule 7 says `shared/` holds ZERO domain knowledge, and the README's grep-test states 'if a filename, component name, or prop name in shared/ contains a domain noun \u2026 it is in the wrong place.' Knowing the exact lifecycle vocabulary of *two* slices (invoice statuses, appointment statuses) and their display wording is pure domain knowledge \u2014 and rule 6: this file now changes for a *billing* reason and a *scheduling* reason, not because the design system evolved. The structure test only greps `shared/` *filenames* and *exported declaration names* for the domain-noun list (invoice, appointment, client, \u2026). None of `format`, `formatStatusLabel`, `STATUS_LABELS`, `status`, `label`, `draft`, `paid`, `scheduled` is a domain noun, and the statuses live as string-literal map keys inside a non-exported const \u2014 so the grep sees nothing. The domain leaked into the global layer wearing a generic costume.",
+      "checks_run": [
+        "cd /home/wds/vise-mb3 && vp lint",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd /home/wds/vise-mb3/apps/web && vp test run",
+        "cd /home/wds/vise-mb3 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "'No domain noun under shared/' (Vitest structure test). It only inspects basenames and `export const|function|...` identifier names; it never inspects string literals, object keys, non-exported bindings, or Vue prop names. Domain vocabulary embedded as data (map keys/values) sails straight through."
+    },
+    {
+      "title": "Raw snake_case server DTO escapes `data/` into the UI by dodging the file-scoped `dtos-stay-home` rule",
+      "what_a_dev_would_write": "For a 'Download PDF' button, a dev adds to billing/data/queries.ts an inline server shape and a pass-through fetch: `export interface InvoicePdfLink { invoice_id: string; download_url: string; expires_at: string }` + `fetchInvoicePdfLink` returning `httpTransport.get<InvoicePdfLink>(...)` with NO zod validation and NO mapper. useInvoiceDetail.ts exposes `pdfLink`, and InvoiceDetailView.vue binds `:href=\"pdfLink.download_url\"`. 'It's just a link, nothing to map.'",
+      "files": [
+        "apps/web/src/slices/billing/data/queries.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+        "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue",
+        "apps/web/src/slices/billing/data/mocks.ts"
+      ],
+      "why_violates_spirit": "The architecture insists 'DTOs never leak upward' and 'the data layer is not decorative: DTOs are validated and mapped to core entities before returning' (dto.ts / queries.ts comments). Here the wire shape (snake_case keys, unvalidated) is consumed directly in a `.vue` view \u2014 the exact leak the boundary forbids \u2014 and validation is skipped entirely. The `dtos-stay-home` depcruise rule is scoped to the *file path* `^src/slices/[^/]+/data/dto\\.` : it only fires when something outside `data/` imports the `dto.ts` module. Declaring the server shape inline in `queries.ts` instead of `dto.ts` means the rule never matches, and the UI's import of it is an ordinary allowed intra-slice edge. Server shape reaches the presentation layer with the checker none the wiser.",
+      "checks_run": [
+        "cd /home/wds/vise-mb3 && vp lint",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json",
+        "cd /home/wds/vise-mb3/apps/web && ./node_modules/.bin/depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd /home/wds/vise-mb3/apps/web && vp test run",
+        "cd /home/wds/vise-mb3 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "`dtos-stay-home` (depcruise). It equates 'DTO' with 'a type exported from data/dto.ts' rather than 'any snake_case/unvalidated server shape'. It cannot recognize a DTO defined anywhere else in `data/` (queries.ts, mutations.ts, inline), so the 'DTOs never escape data/' invariant has a hole the width of a filename."
+    }
+  ],
+  "notes": "All three findings were verified INDEPENDENTLY (git checkout . && git clean -fd between each), each passing all five checks green, then re-applied together; the final combined working state at /home/wds/vise-mb3 passes all five checks (LINT/TSC/DEP/TEST/VERIFY all exit 0; depcruise 86 modules/231 deps clean; vitest 28/28; verify:enforcement 13/13 rules still bite). No CODEOWNERS-protected file was touched \u2014 the 8 changed files are ordinary feature files (shared/lib, billing core/data/ui, scheduling ui). Common thread across findings: every enforced rule reasons about IMPORT EDGES and IDENTIFIER/FILENAME text; none reason about runtime purity, embedded data (string literals / object keys), or the semantic shape of a value. That is the systematic blind spot."
+}

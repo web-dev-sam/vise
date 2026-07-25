@@ -1,0 +1,57 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/shared/lib/i18n.ts",
+      "action": "create",
+      "why": "Domain-free i18n primitive (reactive current locale + generic translate/`t` + locale detection); the mechanism has zero domain nouns so it is shared, not per-slice."
+    },
+    {
+      "path": "apps/web/package.json",
+      "action": "modify",
+      "why": "Add the i18n runtime dependency (e.g. vue-i18n) \u2014 only if we adopt a library instead of a hand-rolled shared primitive."
+    },
+    {
+      "path": "apps/web/src/app/providers/i18n.ts",
+      "action": "create",
+      "why": "Composition-root bootstrap that detects the user's language and installs/initializes the locale, mirroring the existing providers/msw.ts pattern."
+    },
+    {
+      "path": "apps/web/src/app/main.ts",
+      "action": "modify",
+      "why": "Wire the i18n provider into the composition root (detect + `.use(i18n)`) before mounting, next to Pinia/router/MSW setup."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceStatusLabel.ts",
+      "action": "create",
+      "why": "Billing owns its invoice-status text; maps InvoiceStatus -> localized label (en/de) using the shared locale \u2014 a display concern, so it lives in the slice's ui/."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+      "action": "modify",
+      "why": "Replace the raw `props.status` label (and the `capitalize` class) with the localized label from the composable."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useAppointmentStatusLabel.ts",
+      "action": "create",
+      "why": "Scheduling owns its appointment-status text; maps AppointmentStatus -> localized label (en/de) via the shared locale, colocated in the slice's ui/."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the raw `{{ appointment.status }}` render (and `capitalize`) with the localized label from the composable."
+    }
+  ],
+  "uncertain": [
+    "Library vs hand-rolled: whether to pull in vue-i18n (adds a dependency, gives ICU/pluralization) or hand-roll a minimal shared primitive to match the repo's deliberate-minimalism ethos ('one store on purpose'). This flips whether package.json is touched.",
+    "Placement of the shared mechanism: I put it in shared/lib/i18n.ts (already the home of domain-free helpers like format.ts, no structure test restricts shared subfolders), but a dedicated shared/i18n/ folder might read cleaner.",
+    "Status-label home: a per-slice ui/composables/ file vs an inline Record inside each badge component. I chose composables for reuse/testability, but a 3-4 key map inline is defensible for such small maps.",
+    "Scope of status-adjacent strings: the app-level ClientOverviewView.vue 'overdue' badge and AppointmentCard's 'Conflict' badge are English status-ish labels. If 'overdue' must also localize app-side, billing would need to expose a label helper via its index.ts (I did not list that, since app can't import slice ui/ internals)."
+  ],
+  "questions": [
+    "How is the user's language determined \u2014 browser navigator.language, a stored user/account preference, or an explicit locale switcher? No locale source or settings UI exists today.",
+    "Do we need a language-switcher UI for the German launch, or is auto-detection sufficient?",
+    "Is 'statuses' the whole scope, or does launching in German also require localizing dates/currency (shared/lib/format.ts hardcodes 'en-US') and other visible UI strings ('Due', 'Resource:', 'Conflict', 'overdue', 'No upcoming appointments', view titles)?",
+    "Are translators supplying the German status strings, and are there capitalization/wording conventions we must follow (the current UI relies on CSS `capitalize`)?",
+    "Any CODEOWNERS/architecture-review implications if we add a dependency or a new shared module \u2014 should this go through architecture review first?"
+  ]
+}

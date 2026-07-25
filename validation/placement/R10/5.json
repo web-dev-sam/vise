@@ -1,0 +1,47 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/data/dto.ts",
+      "action": "modify",
+      "why": "Add a zod server-shape DTO for the per-client reschedule-toggle response so the runtime flag is validated at the data boundary."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add fetchRescheduleEnabled(clientId) that reads the toggle from the API via httpTransport at runtime \u2014 this is what makes it flippable without a deploy."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "Add an MSW handler + per-client seed for the new flag endpoint so dev and tests can exercise on/off states."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useRescheduleEnabled.ts",
+      "action": "create",
+      "why": "New composable that loads the flag reactively and exposes a boolean the view can gate on, keeping clock/IO wiring out of the .vue file (mirrors useDaySchedule/useReschedule)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Hide the Reschedule button and RescheduleForm when the flag is off \u2014 the actual on/off behavior the user sees."
+    },
+    {
+      "path": "apps/web/tests/scheduling.data.test.ts",
+      "action": "create",
+      "why": "Cover fetchRescheduleEnabled returning enabled/disabled per client, following the tests/ naming convention (scheduling.core.test.ts already exists)."
+    }
+  ],
+  "uncertain": [
+    "Whether the toggle belongs in UI+data only or should also become a core/policy rule (e.g. canReschedule taking a featureEnabled arg). I placed it as a UI gate + IO fetch because the value is IO-sourced and core is framework-free/pure; folding an externally-fetched flag into a pure domain rule felt like over-reach, but a team that treats 'is this flow available' as a domain invariant might want it in core/policy.ts.",
+    "Whether scheduling/index.ts needs a new export. Reschedule only appears in DayView today, so no cross-slice/app consumer needs the flag \u2014 but if the app shell or ClientOverviewView must also react to it, the query/composable would have to be exposed via the public surface.",
+    "Whether a data/mappers.ts change is needed. A bare boolean flag needs no real DTO->core mapping, so I left mappers out; if the server returns a richer shape (e.g. rollout metadata) a mapper entry would be required.",
+    "Test file naming/location: tests live in apps/web/tests/ named <slice>.<area>.test.ts; I assumed scheduling.data.test.ts is the right new name, but the team may prefer extending an existing file."
+  ],
+  "questions": [
+    "What does 'per customer' mean here \u2014 the end-client (clientId like c-ana, already a domain noun) or the product tenant/organization using Vise? There is no current-customer/auth concept in the repo today, and DayView renders a mixed-client day, so per-client gating on that specific view is ambiguous. Which identity keys the flag, and where does it come from?",
+    "Is the flag served by our own API (so transport + a data query is enough) or a third-party flag service like LaunchDarkly (which would add a shared provider/bootstrap and likely an app/providers entry)?",
+    "What is the real backend contract for the toggle \u2014 endpoint path, payload shape, and default when the client is unknown? Only MSW mocks exist now.",
+    "Freshness/caching: 'without deploying' implies a runtime fetch, but how live must it be \u2014 evaluated once per page load, or must an in-session flip take effect without reload?",
+    "When the flow is OFF, should the Reschedule affordance disappear entirely, be disabled with a message, and should the server-side reschedule endpoint also reject (so the toggle isn't purely cosmetic/bypassable)?"
+  ]
+}

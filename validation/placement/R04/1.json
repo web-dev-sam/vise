@@ -1,0 +1,24 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentStatusBadge.vue",
+      "action": "create",
+      "why": "Dedicated status->Badge-variant component mirroring billing's InvoiceStatusBadge.vue, so appointments show their coloured label 'the way invoices do' (a reusable component, not an inline map)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue",
+      "action": "modify",
+      "why": "Replace the inlined VARIANT_BY_STATUS record + inline <Badge> with the new AppointmentStatusBadge so the day view uses the shared component; the conflict badge stays as-is."
+    }
+  ],
+  "uncertain": [
+    "Whether ANY file change is actually warranted: the coloured status label already exists in the day view (AppointmentCard renders a variant-mapped Badge). The task may already be satisfied and this is purely a consistency refactor to match invoices' dedicated-component pattern.",
+    "Whether extracting AppointmentStatusBadge.vue conflicts with the constitution. Invoice's badge earns a component because it's used in 2 views; the appointment badge would have exactly ONE consumer (AppointmentCard). Rules 6/7 ('add a prop/variant, don't make a new component'; 'two usages: leave it duplicated') argue for keeping it inline. I lean toward extraction only because the request explicitly asks to mirror invoices.",
+    "Placement: the badge is scheduling-domain display, so it belongs in scheduling/ui/components and stays private (not exported from index.ts, not promoted to shared/ \u2014 it carries a domain noun, which rule 7's grep test forbids in shared/)."
+  ],
+  "questions": [
+    "Appointments already display a coloured status badge in the day view today. What specifically is missing or wrong \u2014 is this a real gap, or a request to refactor the inline badge into a dedicated component matching InvoiceStatusBadge for consistency?",
+    "Invoice's badge folds in an 'overdue' override (a computed state, not a raw status). Should the appointment badge similarly special-case anything (e.g. surface 'conflict' as a coloured status), or strictly map the three AppointmentStatus values? Currently AppointmentCard shows Conflict as a separate adjacent badge.",
+    "Should the three appointment statuses keep their current colours (scheduled=default, completed=success, cancelled=outline), or is new colour guidance coming with this request?"
+  ]
+}

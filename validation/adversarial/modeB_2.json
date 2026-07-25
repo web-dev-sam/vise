@@ -1,0 +1,63 @@
+{
+  "findings": [
+    {
+      "title": "Billing's tax/total math smuggled into shared/lib as \"generic money math\"",
+      "what_a_dev_would_write": "A tired dev adding to the invoice table sees formatMoney already lives in shared/lib/format.ts and thinks \"money math belongs together and is reusable.\" They create apps/web/src/shared/lib/money.ts exporting netMinor/taxMinor/grossMinor over a generic RatedLine {quantity, unitPriceMinor, taxRateBps} \u2014 an exact copy of billing's core rule (quantity*unitPrice + half-up Decimal tax on basis points) \u2014 and rewire InvoiceLinesTable.vue to call the shared helpers instead of billing/core/rules.ts.",
+      "files": [
+        "apps/web/src/shared/lib/money.ts",
+        "apps/web/src/slices/billing/ui/components/InvoiceLinesTable.vue"
+      ],
+      "why_violates_spirit": "The line-total-with-tax formula is billing DOMAIN CORE \u2014 README worked example 1 explicitly places tax/total math in slices/billing/core/rules.ts (\"Delete Vue and it still makes sense? Yes \u2014 a discount changes line/total math -> billing/core\"). shared/ is supposed to hold ZERO domain knowledge (rule 7). Now the global primitive layer encodes billing's tax model (bps rate, half-up rounding, minor-units line shape). A second slice would not tax lines this way; the concept is not \"genuinely the same everywhere,\" it just looks like arithmetic. The machine only greps shared/ for domain NOUNS in filenames/exported-symbol names, so netMinor/taxMinor/grossMinor/RatedLine \u2014 all noun-free \u2014 sail through while carrying pure billing rules.",
+      "checks_run": [
+        "cd /home/wds/vise-mb2 && vp lint",
+        "cd apps/web && vue-tsc --noEmit -p tsconfig.json",
+        "cd apps/web && depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd apps/web && vp test run",
+        "cd /home/wds/vise-mb2 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "Constitution rule 7 (shared/ holds zero domain knowledge) and rule 4/6 (domain rules live in core). The 'No domain noun under shared/' structure test is the intended guard but only inspects filenames and export-declaration identifiers, never the body of a function \u2014 so domain logic under a noun-free name is invisible to it. depcruise happily allows the ui->shared/lib edge."
+    },
+    {
+      "title": "A shared StatusPill that hard-codes both slices' status semantics (one costume, two reasons to change)",
+      "what_a_dev_would_write": "Noticing billing's InvoiceStatusBadge and scheduling's AppointmentCard both keep a status->badge-variant Record, a dev DRYs them into shared/ui/status-pill/StatusPill.vue with a `status: string` prop and one VARIANT_BY_STATUS map containing BOTH billing statuses (draft/issued/paid/void) and scheduling statuses (scheduled/completed/cancelled), then makes both slice components delegate to it.",
+      "files": [
+        "apps/web/src/shared/ui/status-pill/StatusPill.vue",
+        "apps/web/src/shared/ui/status-pill/index.ts",
+        "apps/web/src/slices/billing/ui/components/InvoiceStatusBadge.vue",
+        "apps/web/src/slices/scheduling/ui/components/AppointmentCard.vue"
+      ],
+      "why_violates_spirit": "This is rule 6's \"two components wearing one costume\": the shared component changes for two unrelated reasons (billing invoice lifecycle vs scheduling appointment lifecycle) and now knows the color semantics of two different domains \u2014 domain knowledge in a global primitive (rule 7). It is used in exactly 2 places for DIFFERENT reasons, so rule 7 says duplicate, don't promote (\"Two usages: leave it duplicated\"). Yet nothing bites: the status values (\"scheduled\", \"cancelled\", ...) live only as object-literal keys and template text, which the shared-domain-noun grep never inspects; the prop is a bare `status: string`, so no slice type crosses into shared and no domain noun appears in a filename or exported symbol.",
+      "checks_run": [
+        "cd /home/wds/vise-mb2 && vp lint",
+        "cd apps/web && vue-tsc --noEmit -p tsconfig.json",
+        "cd apps/web && depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd apps/web && vp test run",
+        "cd /home/wds/vise-mb2 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "Constitution rule 6 (concern = reason to change; split components that change for two reasons) and rule 7 (deliberate promotion, no domain knowledge in shared/). The 'shared/ is domain-free' structure test is the nominal guard but only scans filenames + export declarations; domain status vocabularies embedded as string-literal map keys and a `status: string` prop are structurally invisible to it, and depcruise treats it as an ordinary slice->shared/ui edge."
+    },
+    {
+      "title": "core/ reads the wall clock through a shared/lib seam, breaking rule purity/determinism",
+      "what_a_dev_would_write": "To avoid threading `today` from the composition root onto the invoice detail page, a dev adds shared/lib/clock.ts (`now() => new Date()`) and a convenience billing/core/policy.ts helper `isOverdueNow(invoice)` that calls `isOverdue(invoice, now())`, then surfaces it as an `overdue` computed in useInvoiceDetail and passes it to the status badge.",
+      "files": [
+        "apps/web/src/shared/lib/clock.ts",
+        "apps/web/src/slices/billing/core/policy.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+        "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue"
+      ],
+      "why_violates_spirit": "core/ is supposed to be pure and deterministic: both core files carry the explicit invariant \"today/now is always passed IN ... a clock is never read here,\" and rule 4 says every core/ folder's tests must still pass if you deleted Vue. isOverdueNow makes billing/core non-deterministic \u2014 its result depends on when it runs, so a core-level test of it is inherently time-dependent. The clock read is laundered through shared/lib, which is a legal core->shared/lib edge, and `now()` is a plain global Date() (no vue, no fetch, no restricted npm), so the framework-free / no-restricted-imports guards see nothing wrong. Impurity, not a framework import, is the smell, and no check measures purity.",
+      "checks_run": [
+        "cd /home/wds/vise-mb2 && vp lint",
+        "cd apps/web && vue-tsc --noEmit -p tsconfig.json",
+        "cd apps/web && depcruise src --config .dependency-cruiser.cjs --ignore-known",
+        "cd apps/web && vp test run",
+        "cd /home/wds/vise-mb2 && vp run --filter @vise/web verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "Constitution rule 4 (core is framework-free AND, by the documented invariant, clock-free/deterministic). The enforcement suite only encodes 'framework-free' as an npm allow-list + no-restricted-imports on vue/pinia/fetch; it has no notion of side effects or clock access, and core->shared/lib is an explicitly allowed edge, so a Date() read reached indirectly through shared/lib passes every gate."
+    }
+  ],
+  "notes": "Baseline verified green before starting (86 modules; 28 tests; verify PASS). Each finding built, checked with all 5 commands, and confirmed green in isolation with `git checkout . && git clean -fd` between them. Final applied state = all three combined (they are additive/independent): re-verified green \u2014 vp lint exit 0, vue-tsc clean, depcruise 'no dependency violations found (90 modules, 234 dependencies)', vitest 28/28 passed, verify:enforcement 'PASS: all 13 rules bit'. Files left applied in /home/wds/vise-mb2: new shared/lib/money.ts, shared/lib/clock.ts, shared/ui/status-pill/*; modified billing/core/policy.ts, billing/ui/{components/InvoiceLinesTable.vue,components/InvoiceStatusBadge.vue,composables/useInvoiceDetail.ts,views/InvoiceDetailView.vue}, scheduling/ui/components/AppointmentCard.vue. Common thread: the machine enforces STRUCTURE (file location, import direction, framework/npm allow-lists, domain nouns in shared filenames/exported symbol names) but cannot see SEMANTICS \u2014 domain logic under noun-free names, domain vocabularies as string literals/props, or impurity reached via a legal shared/lib edge all slip through."
+}

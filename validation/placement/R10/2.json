@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add a runtime query (e.g. fetchRescheduleEnabled(customerId)) so the on/off state is read from the server per request \u2014 the 'without deploying' requirement means it must be fetched, not compiled in."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/dto.ts",
+      "action": "modify",
+      "why": "Add the server-shape (snake_case) Zod schema for the per-customer flag response the new query parses; DTOs must live in data/."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mappers.ts",
+      "action": "modify",
+      "why": "Map the flag DTO to the plain core shape the UI consumes, keeping the snake_case wire format from leaking above data/."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/mocks.ts",
+      "action": "modify",
+      "why": "Add an MSW handler for the flag endpoint so the flag is toggleable in dev/tests and the two states (on/off) can actually be exercised."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useRescheduleAvailability.ts",
+      "action": "create",
+      "why": "New composable that reactively loads and exposes whether reschedule is enabled for the current customer; feature-rollout is a different reason-to-change than day-schedule loading (rule 6), so it is its own composable rather than folded into useDaySchedule."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Gate the 'Reschedule' button and inline RescheduleForm on the flag so the flow disappears when the customer has it turned off."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useReschedule.ts",
+      "action": "modify",
+      "why": "Defense-in-depth: refuse submit() when the flag is off so turning the flow 'off' also blocks the mutation, not just hides the button."
+    }
+  ],
+  "uncertain": [
+    "Whether the gating belongs in core/policy.ts (fold a `featureEnabled` param into canReschedule/validateReschedule) instead of only the data+UI layers. I treated 'feature is turned on for this customer' as runtime availability config, not a domain invariant like the 24h rule, so I kept it out of framework-free core \u2014 but a case exists for making core the single decision point.",
+    "Whether mappers.ts is needed at all: if the endpoint returns a bare boolean, the query can return it directly and no mapper/DTO change is warranted. I included both to follow the DTO->core convention, but a trivial payload may make dto.ts/mappers.ts edits unnecessary.",
+    "Separate useRescheduleAvailability composable vs. extending useDaySchedule \u2014 both satisfy the boundary rules; I chose separation on reason-to-change grounds, but the team may prefer one fetch.",
+    "Placement in the scheduling slice vs. shared/. Per rule 7 (3+ same-reason usages before promotion) a single reschedule flag stays in-slice, but if a general per-customer feature-flag platform is intended this would instead be a new shared/http or shared/lib concern plus an app-level provider \u2014 a much larger change I did NOT assume."
+  ],
+  "questions": [
+    "How is the 'current customer' identified at runtime? There is no auth/session/tenant concept anywhere in src today, and the flag query needs a customer id to read the flag for.",
+    "Does 'per customer' mean the tenant/account operating Vise, or the client whose appointment is being rescheduled (c-ana, c-ben in the seed)? The gating point differs (whole DayView vs. per-appointment).",
+    "Is there an existing feature-flag service/endpoint and payload contract to conform to, or do we define a new /api/... endpoint here (and is the server side in scope)?",
+    "What is the server-side toggle mechanism that flips the flag without a deploy (admin UI, config service)? This ticket only covers the frontend read/gate; confirm the backend toggle exists.",
+    "Should the flag also stop appointments mid-flow (e.g. hide/disable an already-open RescheduleForm) or only affect new entries into the flow?"
+  ]
+}

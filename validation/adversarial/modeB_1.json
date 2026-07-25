@@ -1,0 +1,61 @@
+{
+  "findings": [
+    {
+      "title": "Domain core reads the wall clock \u2014 impurity/non-determinism that no check forbids",
+      "what_a_dev_would_write": "Adds `agingBucket(invoice)` to `slices/billing/core/rules.ts` for a receivables/aging report. It buckets by days past due using `differenceInCalendarDays(new Date(), invoice.dueDate)`. Wired through `useInvoiceDetail` (exposes `aging`) and rendered in `InvoiceDetailView.vue` (\"Due <date> \u00b7 31-60\"). A tired dev thinks \"the UI just wants the answer as of now, why thread a `today` through everything.\"",
+      "files": [
+        "apps/web/src/slices/billing/core/rules.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+        "apps/web/src/slices/billing/ui/views/InvoiceDetailView.vue"
+      ],
+      "why_violates_spirit": "Constitution rule 4 says core is framework-free AND the code repeatedly insists a clock is NEVER read in core \u2014 `today`/`now` are passed IN so rules stay pure, deterministic and testable (see `isOverdue`, `summarize`, and every scheduling rule). `agingBucket` reads `new Date()` internally, making a core rule non-deterministic and non-reproducible: its output depends on when it runs, and it cannot be unit-tested without mocking global time. It smuggles a UI/data concern (the current instant) into the stability layer whose whole promise is purity. Every enforcement tool only inspects *imports* (`vue`/`pinia`/`fetch`/`data`/`ui`/cross-slice) \u2014 `new Date()` is a JS builtin with no import, so nothing catches it. `date-fns` is on the core npm allow-list, so even the date arithmetic is 'legal'.",
+      "checks_run": [
+        "vp lint",
+        "vue-tsc --noEmit",
+        "depcruise --ignore-known",
+        "vp test run",
+        "verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "None exists. There is no rule forbidding `new Date()`/`Date.now()`/`Math.random()`/`performance.now()` inside `slices/*/core/**`. The Oxlint `no-restricted-imports` and dependency-cruiser `core-is-framework-free`/`layers-point-down` rules are all import-graph based; a clock read has no import edge. A `no-restricted-syntax`/`no-restricted-globals` Oxlint rule banning global time/RNG access under core/ (or a purity lint) would catch it."
+    },
+    {
+      "title": "Domain (invoice-lifecycle) knowledge disguised as a generic primitive in shared/lib",
+      "what_a_dev_would_write": "Creates `shared/lib/ordering.ts` exporting `lifecycleRank(value: string): number` backed by a private `LIFECYCLE_ORDER = ['draft','issued','paid','void']`, then sorts the invoice list by it in `useInvoiceList` (`sortedInvoices` computed). Framed as a reusable 'sort by lifecycle, not A\u2192Z' list helper 'so scheduling can reuse it later.'",
+      "files": [
+        "apps/web/src/shared/lib/ordering.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts"
+      ],
+      "why_violates_spirit": "`shared/` is defined as ZERO domain knowledge (rules 6/7): its stated reason-to-change is 'the design system evolves,' and promotion requires 3+ same-reason usages. `LIFECYCLE_ORDER = draft\u2192issued\u2192paid\u2192void` IS the billing invoice lifecycle \u2014 pure domain knowledge that changes for a billing reason (a new invoice status), used by exactly one slice. It belongs in `billing/core`. It now lives in the global primitive layer, so a billing rule change edits a shared file and scheduling transitively 'depends' on billing's lifecycle. The grep-based guard (constitution rule 7's 'domain noun in a shared name') is dodged because the vocabulary is billing's *status values*, not the *nouns* the list checks for, and the values are string-typed so no `InvoiceStatus` import betrays it.",
+      "checks_run": [
+        "vp lint",
+        "vue-tsc --noEmit",
+        "depcruise --ignore-known",
+        "vp test run",
+        "verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "The structure test `shared/ is domain-free` only greps filenames and exported-symbol names against `domainNouns` (invoice, billing, appointment, client, payment, \u2026). It cannot see (a) domain *string literals* like 'draft'/'issued'/'paid'/'void' inside a function body, nor (b) that the *behavior* is domain-specific. `lifecycleRank`, `LIFECYCLE_ORDER`, `value`, `ordering.ts` contain no listed noun, so it passes. Semantic/domain-logic detection in shared is simply not enforceable by a noun grep."
+    },
+    {
+      "title": "Slice silo leaked through an over-broad public index \u2014 the read model is bypassed",
+      "what_a_dev_would_write": "Widens `scheduling/index.ts` to also re-export the raw core entity `Appointment` and the unfiltered `fetchAppointments()`. Billing's `useInvoiceList` then imports the full `Appointment` entity (not the purpose-built `AppointmentSummary` read model), builds an `appointmentById` map and reads `.start` in `InvoiceListView.vue`. A tired dev thinks \"the entity already has the field I need \u2014 why ask scheduling to add a read-model field?\"",
+      "files": [
+        "apps/web/src/slices/scheduling/index.ts",
+        "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+        "apps/web/src/slices/billing/ui/views/InvoiceListView.vue"
+      ],
+      "why_violates_spirit": "Rule 3 + worked-example #2: slices are near-total silos; only a tiny, stable read model (`AppointmentSummary`) is meant to cross the boundary, explicitly so 'consumers never need scheduling's core rules' and billing is decoupled from scheduling's internal shape. Exposing `Appointment` (scheduling's mutable internal core entity: resourceId, status, start/end) and the unfiltered `fetchAppointments()` recouples billing to scheduling's internals \u2014 any change to scheduling's `Appointment` now breaks billing, and billing fetches ALL appointments to filter client-side. The isolation is only nominal: the import still travels through `index.ts`, so it is 'legal.'",
+      "checks_run": [
+        "vp lint",
+        "vue-tsc --noEmit",
+        "depcruise --ignore-known",
+        "vp test run",
+        "verify:enforcement"
+      ],
+      "all_checks_passed": true,
+      "which_rule_should_have_caught_it": "dependency-cruiser `slice-isolation` + the closed allow-list only verify that a cross-slice edge terminates at the target's `index.ts` *file* \u2014 they never inspect *what* is exported/imported. `dtos-stay-home` guards only `data/dto.*`; a core `types.ts` entity re-exported via `index.ts` isn't a DTO, so it's untouched. Enforcing this would require the public surface to be a checked contract (e.g. an allow-list of exported symbols per slice `index.ts`, or forbidding core-entity types from crossing while permitting only `*Summary` read models)."
+    }
+  ],
+  "notes": "Working copy /home/wds/vise-mb1. Baseline was fully green before edits. Each finding was implemented, run through ALL FIVE checks (`vp lint`, `vue-tsc --noEmit`, `depcruise src --ignore-known`, `vp test run`, `verify:enforcement`) at exit 0 in ISOLATION (git checkout . && git clean -fd between findings), then all three were re-applied to a single tree and re-verified \u2014 final combined state passes all five (depcruise: 87 modules/230 deps, 0 violations; vitest: 28/28; verify:enforcement: all 13 rules still bite). No CODEOWNERS-protected file was touched (architecture.config.ts, generated configs, tsconfig.json, structure/consistency tests all untouched). Two project rules fired during editing and were complied with: `ts-no-tiny-functions` (F1 was reworked from a one-line `isOverdueNow` wrapper into the substantial `agingBucket`) and `ts-set-map` (F3's dynamic `Map<string,Appointment>` is a legitimate runtime-collection use). Findings exploit three DISTINCT holes: (1) no purity/clock check on core, (2) shared-purity guard is a noun-grep, not semantic, (3) the allow-list checks the boundary *file* not the boundary *payload*."
+}

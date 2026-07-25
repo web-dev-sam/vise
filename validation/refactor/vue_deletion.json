@@ -1,0 +1,11 @@
+{
+  "drill": "Delete Vue: copy core/ alone into a scratch workspace with no vue, compile + run its tests",
+  "predicted_containment": "nothing outside core/ (its tests pass, it compiles) — fails if it needs vue or a DOM",
+  "method": "Copied only src/slices/{billing,scheduling}/core + src/shared/lib/result.ts + the two core test files into /home/wds/vise-core-scratch. tsconfig types:[] (no vue/node ambient types), skipLibCheck for third-party d.ts DOM-global gaps. vitest with vue/pinia/vue-router aliased to a module that THROWS on load, environment=node (no DOM).",
+  "result": "PASS",
+  "tsc_exit": 0,
+  "vitest": "2 files, 17 tests passed",
+  "framework_imports_in_copied_core": "none",
+  "nuance": "core is not 100% self-contained: scheduling/core/policy.ts imports @shared/lib/result. But result.ts is itself framework-free (pure Result type), so the 'delete Vue and core compiles' guarantee holds. core reaches DOWN only to a pure shared primitive, never to vue/pinia/router/fetch.",
+  "verdict": "The framework-free rule is REAL, not decoration."
+}

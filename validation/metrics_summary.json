@@ -1,0 +1,46 @@
+{
+  "instability_per_layer": {
+    "source": "depcruise src --config .dependency-cruiser.cjs --output-type metrics (I = Ce/(Ca+Ce))",
+    "anchors": {
+      "app (folder)": "I=100% (Ca=0, Ce=19) — leaf, imported by nobody. CORRECT.",
+      "billing/core (folder)": "I=13% (Ca=14, Ce=2) — stable. CORRECT.",
+      "scheduling/core (folder)": "I=24% (Ca=13, Ce=4) — stable; Ce driven by @shared/lib/result + date-fns in policy.ts.",
+      "billing/core/types.ts": "I=0% (Ca=11, Ce=0) — maximally stable.",
+      "scheduling/core/types.ts": "I=0% (Ca=11, Ce=0) — maximally stable.",
+      "shared/lib (folder)": "I=16% (Ca=27, Ce=5) — stable, heavily depended on. CORRECT.",
+      "shared/http (folder)": "I=0% (Ca=4, Ce=0) — maximally stable.",
+      "billing/data (folder)": "I=72%; scheduling/data: I=71% — mid-high, expected for IO layer.",
+      "note": "depcruise Ce includes npm deps, which inflates I for leaf UI SFCs (they import vue/reka-ui). Read at folder granularity. Gradient is correct: core+shared stable (near 0), app maximally unstable (leaf). LEADING INDICATOR: rising instability of slices/*/core folders over time = the architecture inverting; it currently sits at 13-24% (0% for types)."
+    },
+    "table_file": "validation/metrics_instability.txt"
+  },
+  "rule7_audit": {
+    "method": "for each src/shared/** module, count DISTINCT importing slices (via depcruise reverse edges)",
+    "findings": {
+      "unused_primitive": "shared/lib/useDebounce.ts has ZERO importers — dead/speculative code. Not caught by no-orphans (it imports vue, so depcruise's orphan=no-in-AND-no-out definition does not fire). Rule 7 says a thing needs 3+ same-reason usages to be in shared/; this has zero.",
+      "single_slice_shared_modules": ["lib/result.ts (scheduling only)", "ui/alert (scheduling only)", "ui/input (scheduling only)", "ui/label (scheduling only)", "ui/table (billing only)"],
+      "legit_shared": ["lib/format.ts (3 slices)", "ui/badge (3)", "ui/card (3)", "ui/button (2)", "http/transport.ts (2)"],
+      "caveat": "The single-slice hits are shadcn-vue DESIGN-SYSTEM primitives (Table/Input/Label/Alert). The constitution treats shadcn primitives as legitimately shared regardless of current usage count, which CONFLICTS with Rule 7's '3+ usages' guideline. The Rule-7 meter cannot distinguish 'premature domain promotion' (real smell) from 'design-system primitive not yet widely used' (fine). It needs a shared/ui carve-out, else it false-positives on the whole primitive library. useDebounce (0 uses) is the one unambiguous finding."
+    },
+    "file": "validation/rule7_audit.json"
+  },
+  "churn_by_layer": {
+    "collection_script": "git log --all --format= --name-only | grep -E '^apps/web/src/' | sed -E 's#^apps/web/src/slices/[^/]+/(core|data|ui)/.*#\\1#; s#^apps/web/src/shared/.*#shared#; s#^apps/web/src/app/.*#app#; s#^apps/web/src/slices/[^/]+/(index|routes)\\..*#slice-root#' | sort | uniq -c | sort -rn",
+    "starter_snapshot_NOISE": {"shared": 32, "ui": 11, "data": 11, "app": 7, "core": 6, "slice-root": 4},
+    "expected_shape_on_real_repo": "ui highest, core lowest. On the starter, shared=32 dominates only because the whole shadcn primitive set was created in the initial commit; core=6 is already lowest-tier, which is the correct direction.",
+    "interpretation": "core churn climbing toward ui churn over time = business rules leaking upward or framework leaking down."
+  },
+  "cross_slice_pr_rate": {
+    "definition": "fraction of merged PRs whose changed files span 2+ distinct slices (excluding app/ and shared/).",
+    "query": "for each merged PR: git show --name-only --format= <merge> | grep '^apps/web/src/slices/' | sed -E 's#.*/slices/([^/]+)/.*#\\1#' | sort -u | wc -l  ; count PRs where that is >=2, divide by total merged PRs.",
+    "baseline_on_starter": "N/A (2 commits, no PR history). Meter defined for the real repo.",
+    "interpretation": "a HIGH cross-slice PR rate means the slice boundaries do not match how the domain actually changes — no enforcement can fix mis-drawn slices; it is a re-slicing signal."
+  },
+  "baseline_and_disable_counts": {
+    "known_violations_baseline": 0,
+    "MAX_KNOWN_VIOLATIONS": 0,
+    "boundary_disable_comments": 0,
+    "monotonic_invariant": "both must only ever decrease; enforced by scripts/check-baseline-size.ts (baseline) and scripts/check-no-disable-comments.ts (disables). At 0/0 the ratchet is at its floor.",
+    "publish_location": "CI job summary on every run (arch:baseline:check + arch:no-disable), and should be echoed to a tracked METRICS row so trend is visible across PRs."
+  }
+}

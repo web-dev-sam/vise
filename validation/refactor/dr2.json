@@ -1,0 +1,19 @@
+{
+  "completed": true,
+  "all_checks_pass": true,
+  "checks_run": [
+    "vp lint",
+    "vue-tsc --noEmit -p tsconfig.json",
+    "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "vp test run",
+    "vp run --filter @vise/web verify:enforcement"
+  ],
+  "folders_touched": [
+    "apps/web/src/slices/billing/data",
+    "apps/web/src/slices/scheduling/data",
+    "apps/web/tests"
+  ],
+  "escape_hatches_used": "none",
+  "unexpected_files_changed": "none",
+  "notes": "Reshaped every DTO in both slices with all three changes. (a) Casing: snake_case -> camelCase (unit_price->unitPrice, client_id->clientId, starts_at->window.startsAt, etc.). (b) Nesting: billing lines array wrapped under lineItems.lines; scheduling starts_at/ends_at wrapped under a window sub-object. (c) Enum: invoice status is now a STRING enum on the wire (\"DRAFT\"|\"ISSUED\"|\"PAID\"|\"VOID\") instead of int 0-3, and appointment status likewise (\"SCHEDULED\"|\"COMPLETED\"|\"CANCELLED\"); deliberately UPPER_CASE so it differs from the core lowercase union and the mapper still earns its keep. Updated: billing/data/{dto,mappers,mocks}.ts and scheduling/data/{dto,mappers,mocks}.ts. Also updated apps/web/tests/billing.mappers.test.ts (an editable, non-CODEOWNERS test \u2014 only tests/architecture.*.test.ts are protected) to the new DTO shape. Core (domain) entities and all UI/app files were left untouched; verified via grep that no DTO key shape leaked above data/ (the unitPriceMinor/taxRateBps hits are pre-existing core fields, unrelated to DTO keys). No CODEOWNERS-protected files edited; no escape hatches. All 5 checks exit 0."
+}

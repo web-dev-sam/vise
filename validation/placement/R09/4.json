@@ -1,0 +1,53 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/core/policy.ts",
+      "action": "modify",
+      "why": "'Finance may void' is a business rule about invoices, so canVoid gains the actor's roles and requires the finance role alongside the existing status check (stays framework-free)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceDetail.ts",
+      "action": "modify",
+      "why": "canVoidInvoice must fold in the current user's roles: read them from the shared session reader and pass them to canVoid so the computed drives the button's visibility."
+    },
+    {
+      "path": "apps/web/tests/billing.core.test.ts",
+      "action": "modify",
+      "why": "Existing canVoid tests assert status-only behavior and will break; extend them to cover the finance-role requirement (finance-with-unpaid = true, non-finance = false)."
+    },
+    {
+      "path": "apps/web/src/shared/lib/roles.ts",
+      "action": "create",
+      "why": "No auth concept exists anywhere; a pure Role vocabulary including 'finance' must live in shared/lib because billing/core is only allowed to import shared/lib (per the allow-list) and roles are cross-cutting, not a billing domain noun."
+    },
+    {
+      "path": "apps/web/src/shared/lib/useCurrentUser.ts",
+      "action": "create",
+      "why": "The UI needs a reactive reader of the signed-in user's roles; shared/lib is importable by slice ui/ and holds framework composables already (useDebounce), and 'user/role' is not a banned domain noun."
+    },
+    {
+      "path": "apps/web/src/app/providers/session.ts",
+      "action": "create",
+      "why": "Someone must seed the current user/roles at startup; the composition root owns providers (app-is-a-leaf means slices can't read app, so it only writes into the shared session reader)."
+    },
+    {
+      "path": "apps/web/src/app/main.ts",
+      "action": "modify",
+      "why": "Bootstrap must initialize the session provider before mount, next to startMockApi(), so roles are available when views render."
+    }
+  ],
+  "uncertain": [
+    "Biggest one: WHERE identity/roles should live. There is no auth infrastructure anywhere in the repo. I placed it in shared/lib + an app provider because that needs no architecture-review changes, but the more constitution-faithful home is a NEW 'access'/'identity' slice (core=Role+hasRole rule, data=current-user query/mock/store, ui=useCurrentUser, empty routes.ts, index.ts) consumed by billing via @slices/access \u2014 the canonical cross-slice pattern. That path is heavier: it edits the CODEOWNERS-protected `slices` list in architecture.config.ts and thus requires architecture review.",
+    "Whether the void rule belongs in billing/core (canVoid(invoice, roles)) or should stay status-only in core with the role check done in the ui composable. I chose core because 'finance may void' is a business rule, but it makes core reference a role vocabulary.",
+    "Global reactive state has no sanctioned home: 'stores' is a banned directory and Pinia stores are meant to live in a slice's data/. So I used a shared/lib singleton composable rather than a store, which may be considered a smell.",
+    "InvoiceDetailView.vue intentionally needs NO change \u2014 its Button is already v-if=\"canVoidInvoice\", so hiding falls out of the composable. Flagging in case reviewers expected a view edit.",
+    "If roles are fetched (not seeded synchronously), a current-user MSW mock is needed, but mock handlers are composed per-slice from data/mocks.ts in app/providers/msw.ts \u2014 a session mock has no slice to belong to, reinforcing the identity-home question."
+  ],
+  "questions": [
+    "There is no existing auth/user/role/session concept in the codebase at all \u2014 is one being introduced elsewhere (backend, another PR), or am I standing up the first identity mechanism here? This determines almost every placement above.",
+    "Should identity be a new slice (needs architecture review to add to architecture.config.ts + CODEOWNERS) or shared primitives? Feature work is explicitly not supposed to touch architecture files, so I need a ruling.",
+    "Where does the current user's role actually come from at runtime \u2014 a /api/me endpoint (needs a mock + query), a JWT/claims, or injected config? That decides data/ vs synchronous app seed.",
+    "Should the void mutation endpoint also enforce finance-only server-side (defense in depth), or is hiding the button sufficient for this request? The ask only mentions the button.",
+    "Exact role model: is it a single role or a set of roles per user, and is 'finance' the canonical string? Also, do admins/superusers implicitly get void rights?"
+  ]
+}

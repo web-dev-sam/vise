@@ -1,0 +1,35 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "DTOs are the server-shape contract; rename the zod schema keys and add the extra nesting level for line items here \u2014 the API change lands in data/ by design."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "The DTO<->core mapper must read the renamed fields and reach one level deeper for line items so core entities stay unchanged \u2014 this is where the mapper 'earns its keep'."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "MSW seed data is authored in server shape, so the fixtures must adopt the renamed fields and the deeper line-item nesting to match the new API."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Its hard-coded InvoiceDto literal and round-trip expectations encode the old field names/flat lines and would fail; update them to the new server shape."
+    }
+  ],
+  "uncertain": [
+    "apps/web/src/slices/billing/data/queries.ts and mutations.ts: likely NO change, since they consume invoiceDtoSchema/toInvoice by their existing names. They'd only need touching if the schema/type export names themselves change or if the deeper nesting requires a different parse call \u2014 unsure without the exact new shape.",
+    "Whether core/ (types.ts, rules.ts, policy.ts) and ui/ stay untouched. The architecture's premise is that a pure wire-format change is fully absorbed by data/. I'm treating this as wire-only; if the backend change also reflects a genuine domain-model change, core/ and its tests (billing.core.test.ts) would also move \u2014 but nothing in the request implies that."
+  ],
+  "questions": [
+    "What are the exact new field names (old -> new mapping), and does the rename cover client_id/issue_date/due_date/appointment_id/unit_price/tax_rate or only some?",
+    "What is the precise new nesting shape for line items \u2014 e.g. lines: { items: [...] } vs invoice.details.lines? I need the wrapper key(s) to update the schema and mapper.",
+    "Is this a hard cutover, or must the frontend tolerate both old and new API shapes during a backend rollout (i.e. do we need a transitional/union schema)?",
+    "Is this strictly a wire-format change with the billing domain model unchanged, or do any renamed/added fields represent new domain concepts we should surface in core/ and the UI?",
+    "Do the renamed fields include any brand-new fields the server will now send that the product wants displayed, or is this a pure rename+renest with identical data?"
+  ]
+}

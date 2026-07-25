@@ -1,0 +1,36 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/data/dto.ts",
+      "action": "modify",
+      "why": "Server shapes (zod schemas) are the boundary that mirrors the API: rename the DTO keys and nest invoiceLineDtoSchema one level deeper (e.g. a wrapper object) to match the new response."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mappers.ts",
+      "action": "modify",
+      "why": "toInvoice/toInvoiceDto read/write the renamed DTO fields and the deeper line-items path; updating only the mapper keeps core entities unchanged (the whole point of this layer)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/data/mocks.ts",
+      "action": "modify",
+      "why": "MSW seed data is served in raw server shape and validated by invoiceDtoSchema.parse, so it must adopt the new field names and line nesting or every fetch throws."
+    },
+    {
+      "path": "apps/web/tests/billing.mappers.test.ts",
+      "action": "modify",
+      "why": "Its InvoiceDto fixture uses the old flat, old-named shape; update it to the new keys/nesting so the mapping and round-trip assertions still exercise a schema-valid DTO."
+    }
+  ],
+  "uncertain": [
+    "Whether the API change is a pure rename (absorbed entirely by data/, core untouched) or whether a renamed field actually carries new meaning \u2014 if so, core/types.ts, core/rules.ts, and ui components could also need changes. I assumed a pure rename per the README's stability-layer model.",
+    "mocks.ts: I assumed the frontend still owns MSW seed fixtures that must track the new shape; if the team has a shared/generated contract or the mock is meant to lag behind, placement could differ.",
+    "Exact nesting target for 'one level deeper' (a new wrapper key on the invoice vs. lines becoming { items: [...] } vs. a nested container object) \u2014 the shape drives the precise dto.ts/mappers.ts edits."
+  ],
+  "questions": [
+    "What is the exact old->new field-name mapping, and which fields are affected (invoice level, line level, or both)?",
+    "What is the precise new nesting for line items \u2014 the new key name(s) and structure the array now lives under?",
+    "Do value encodings also change (still snake_case, money-as-strings, ISO dates, integer status enum) or only names/nesting?",
+    "Is this a hard cutover, or must the client temporarily accept both old and new shapes during backend rollout (would require dual-parsing logic in data/)?",
+    "Do all invoice endpoints share the new shape (list /api/invoices, detail /api/invoices/:id, and the void PATCH response), or only some?"
+  ]
+}

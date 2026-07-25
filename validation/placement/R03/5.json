@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "path": "apps/web/src/slices/billing/ui/components/DateRangeFilter.vue",
+      "action": "create",
+      "why": "Date-range picker widget duplicated into billing's ui/ (rule 7: only 2 usages -> duplicate, do not promote to shared/ until a 3rd same-reason use; worked example #3)."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/views/InvoiceListView.vue",
+      "action": "modify",
+      "why": "Render the filter above the invoices table and bind the selected range."
+    },
+    {
+      "path": "apps/web/src/slices/billing/ui/composables/useInvoiceList.ts",
+      "action": "modify",
+      "why": "Own the selected-range ref and filter the invoice list by it (client-side; the store already loads all invoices, so no data-layer change here)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/components/DateRangeFilter.vue",
+      "action": "create",
+      "why": "A separate copy of the same widget in scheduling's ui/ \u2014 same look but a distinct reason to change, so duplicated rather than shared (rules 6 and 7)."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/views/DayView.vue",
+      "action": "modify",
+      "why": "Render the filter at the top and replace the fixed single `day` ref with the selected range."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/ui/composables/useDaySchedule.ts",
+      "action": "modify",
+      "why": "Accept a date range instead of a single `day: Ref<Date>` and drive fetching/filtering from it."
+    },
+    {
+      "path": "apps/web/src/slices/scheduling/data/queries.ts",
+      "action": "modify",
+      "why": "Add a range query (e.g. fetchAppointmentsInRange); the existing fetchAppointmentsForDay only covers a single day."
+    }
+  ],
+  "uncertain": [
+    "Duplicate-per-slice vs one shared/ui primitive: the phrase 'same look and behaviour in both' pushes toward a single shared/ui/date-range-picker/, but the constitution (rule 7 + worked example #3) says duplicate at 2 usages and only promote at the 3rd. I followed the constitution (duplicated); a team could reasonably decide this is a design-system primitive from day one.",
+    "Whether scheduling truly needs the data/queries.ts change or could filter client-side in the composable the way billing does via its store \u2014 depends on API/data volume; I assumed a new range query.",
+    "If a DateRange {start,end} value type is extracted, where it lives: slice-ui-local vs shared/lib. Slice roots allow only core/data/ui/routes.ts/index.ts, so I kept the range shape local to each component/composable rather than inventing a home for it.",
+    "Whether to add composable unit tests for the new filtering behaviour: the repo currently has only core/mappers tests (no composable/view tests), so there is no precedent to match, and I did not list speculative test files."
+  ],
+  "questions": [
+    "Which date should the invoice list filter on \u2014 the invoice's own issueDate, or the 'Generated from' appointment start it currently displays (from scheduling)? They can differ, and the second would filter on cross-slice data.",
+    "The current scheduling screen is a single-day view; does a date-range filter turn it into a multi-day range view, and if so how should cross-day conflict detection (findConflicts, currently computed per day) behave across the range?",
+    "Is 'same look and behaviour' a directive to ship ONE shared component (accepting a rule-7 exception), or just a UX-consistency requirement that two matching duplicates satisfy?",
+    "Should the selected range persist in the URL/query params (shareable/bookmarkable) or is component-local state acceptable?",
+    "What is the default range on load (e.g. current month, or the existing fixed demo day), and does an empty/unset range mean 'show all'?"
+  ]
+}
