@@ -37,9 +37,10 @@ answer, not an argument. Boundaries are checked in CI, not in code review.
 
 ## See the boundaries
 
-Two focused dependency graphs, each rendered by the `graph` task
-(`node scripts/depcruise-focus.mjs <file>`). Every arrow points toward stability,
-and cross-slice traffic is pinched through each silo's public `index.ts`.
+Three focused dependency graphs, each rendered by the `graph` task
+(`node scripts/depcruise-focus.mjs <file>`). The first two show the healthy shape —
+every arrow points toward stability, cross-slice traffic pinched through each silo's
+public `index.ts`; the third shows what a boundary break looks like.
 
 <p align="center">
   <img src="assets/graph-client-overview.svg" alt="Focus graph of the client-overview screen reaching billing and scheduling only through their public index.ts, plus shared primitives" width="440">
@@ -51,6 +52,12 @@ and cross-slice traffic is pinched through each silo's public `index.ts`.
   <img src="assets/graph-cross-slice.svg" alt="Focus graph of a billing composable importing its own core and data and reaching scheduling only through scheduling/index.ts" width="460">
   <br>
   <sub><b>The blessed cross-slice read.</b> <code>billing/ui/composables/useInvoiceList.ts</code> uses its own <code>core</code> + <code>data</code>, and reaches <code>scheduling</code> only through its door.</sub>
+</p>
+
+<p align="center">
+  <img src="assets/graph-violation.svg" alt="Focus graph where shared/lib/useDebounce.ts illegally imports the billing slice — the red not-in-allowed edge is the violation" width="460">
+  <br>
+  <sub><b>A broken boundary.</b> The red <code>not-in-allowed</code> edge is <code>shared/lib/useDebounce.ts</code> importing the <code>billing</code> slice — and since <code>shared/</code> is the domain-free bottom layer, an arrow <em>up</em> into a slice inverts the dependency direction and fails the build.</sub>
 </p>
 
 New to these? [Reading the graph](docs/reading-the-graph.md) explains how to generate one and what to look for.
