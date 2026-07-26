@@ -23,7 +23,7 @@ interface CheckResult {
 
 function runIn(cwd: string, cmd: string, args: string[]): CheckResult {
   const result = spawnSync(cmd, args, { cwd, encoding: "utf8" });
-  return { code: result.status ?? 1, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
+  return { code: result.status ?? 1, output: `${result.stdout}${result.stderr}` };
 }
 
 const checkers = {

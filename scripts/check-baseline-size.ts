@@ -17,7 +17,7 @@ const MAX_KNOWN_VIOLATIONS = 0;
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const baselinePath = join(repoRoot, "apps", "web", ".dependency-cruiser-known-violations.json");
 
-const baseline = JSON.parse(readFileSync(baselinePath, "utf8")) as unknown[];
+const baseline: unknown = JSON.parse(readFileSync(baselinePath, "utf8"));
 const count = Array.isArray(baseline) ? baseline.length : 0;
 
 if (count > MAX_KNOWN_VIOLATIONS) {

@@ -43,7 +43,8 @@ let report;
 try {
   report = JSON.parse(raw.slice(brace));
 } catch {
-  console.error(raw.trim() || "dependency-cruiser produced no parseable output");
+  const trimmed = raw.trim();
+  console.error(trimmed === "" ? "dependency-cruiser produced no parseable output" : trimmed);
   process.exit(status && status !== 0 ? status : 1);
 }
 

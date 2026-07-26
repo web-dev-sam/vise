@@ -16,8 +16,15 @@ const result = spawnSync(
   { cwd: appDir, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 },
 );
 
-const parsed = JSON.parse(result.stdout) as { modules?: unknown[] };
-const count = parsed.modules?.length ?? 0;
+const parsed: unknown = JSON.parse(result.stdout);
+const modules =
+  typeof parsed === "object" &&
+  parsed !== null &&
+  "modules" in parsed &&
+  Array.isArray(parsed.modules)
+    ? parsed.modules
+    : [];
+const count = modules.length;
 
 if (count < FLOOR) {
   console.error(

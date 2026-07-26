@@ -23,7 +23,7 @@ const result = spawnSync(
   { cwd: appDir, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 },
 );
 
-const raw = result.stdout ?? "";
+const raw = result.stdout;
 const start = raw.search(/(strict\s+)?digraph/);
 if (start < 0) {
   console.error("depcruise did not emit a DOT graph.");
