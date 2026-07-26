@@ -1,5 +1,5 @@
 import { defineConfig } from "vite-plus";
-import { APP_DIR, buildOxlintOverrides } from "./architecture.config";
+import { APP_DIR, buildOxlintBaseConfig, buildOxlintOverrides } from "./architecture.config";
 
 // Oxlint boundary rules are generated from architecture.config.ts (the single
 // source of truth) so `vp lint` and dependency-cruiser can never disagree.
@@ -14,6 +14,7 @@ export default defineConfig({
     "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}": "vp lint --fix",
   },
   lint: {
+    ...buildOxlintBaseConfig(),
     options: { typeAware: false, typeCheck: false },
     overrides: buildOxlintOverrides(`${APP_DIR}/`),
   },

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAllowedRules,
   buildForbiddenRules,
+  buildOxlintBaseConfig,
   buildOxlintOverrides,
 } from "../../../architecture.config.ts";
 
@@ -24,6 +25,7 @@ describe("generated configs match the single source of truth", () => {
     const committed = readJson(".oxlintrc.json");
     expect(committed).toEqual({
       $schema: "./node_modules/oxlint/configuration_schema.json",
+      ...buildOxlintBaseConfig(),
       overrides: buildOxlintOverrides(""),
     });
   });

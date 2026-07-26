@@ -15,7 +15,7 @@ export async function fetchAppointmentsForDay(day: Date): Promise<Appointment[]>
   const appointments = await fetchAppointments();
   return appointments
     .filter((appointment) => isSameDay(appointment.start, day))
-    .sort((a, b) => a.start.getTime() - b.start.getTime());
+    .toSorted((a, b) => a.start.getTime() - b.start.getTime());
 }
 
 /** Public read model: a client's future, still-scheduled appointments. */
@@ -31,7 +31,7 @@ export async function fetchUpcomingAppointments(
         appointment.status === "scheduled" &&
         appointment.start.getTime() > now.getTime(),
     )
-    .sort((a, b) => a.start.getTime() - b.start.getTime())
+    .toSorted((a, b) => a.start.getTime() - b.start.getTime())
     .map(summarizeAppointment);
 }
 

@@ -48,10 +48,10 @@ Every rule, the tool that enforces it, and the command that checks it. All at
 | Oxlint & depcruise configs match the source of truth                | Vitest consistency test                            | `vp run -r test`                           |
 | A slice `index.ts` re-exports no _other_ slice (no laundering)      | dependency-cruiser `public-index-no-relaunder`     | `arch:depcruise`                           |
 | `core/` never _transitively_ reaches the framework                  | dependency-cruiser `core-stays-framework-free`     | `arch:depcruise`                           |
-| `core/` is pure — no clock / `Date.now` / randomness               | Vitest structure test                              | `vp run -r test`                           |
+| `core/` is pure — no clock / `Date.now` / randomness                | Vitest structure test                              | `vp run -r test`                           |
 | `import()` uses a static (literal) specifier                        | Vitest structure test                              | `vp run -r test`                           |
-| A Pinia `defineStore` lives only in a slice's `data/`              | Vitest structure test                              | `vp run -r test`                           |
-| Server shapes (snake_case types) stay in `data/dto.ts`            | Vitest structure test                              | `vp run -r test`                           |
+| A Pinia `defineStore` lives only in a slice's `data/`               | Vitest structure test                              | `vp run -r test`                           |
+| Server shapes (snake_case types) stay in `data/dto.ts`              | Vitest structure test                              | `vp run -r test`                           |
 | Baseline only shrinks                                               | `scripts/check-baseline-size.ts`                   | `arch:baseline:check`                      |
 | depcruise actually parsed the graph (no false pass)                 | `scripts/check-module-count.ts`                    | `arch:module-count`                        |
 | No inline boundary-rule disable comments                            | `scripts/check-no-disable-comments.ts`             | `arch:no-disable`                          |

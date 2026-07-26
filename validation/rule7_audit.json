@@ -2,30 +2,21 @@
   {
     "module": "http/transport.ts",
     "distinct_slices": 2,
-    "slices": [
-      "billing",
-      "scheduling"
-    ],
+    "slices": ["billing", "scheduling"],
     "importers": 4,
     "flag": ""
   },
   {
     "module": "lib/format.ts",
     "distinct_slices": 3,
-    "slices": [
-      "app",
-      "billing",
-      "scheduling"
-    ],
+    "slices": ["app", "billing", "scheduling"],
     "importers": 6,
     "flag": ""
   },
   {
     "module": "lib/result.ts",
     "distinct_slices": 1,
-    "slices": [
-      "scheduling"
-    ],
+    "slices": ["scheduling"],
     "importers": 1,
     "flag": "SINGLE-IMPORTER -> demote into that slice"
   },
@@ -39,257 +30,196 @@
   {
     "module": "lib/utils.ts",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 20,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/alert/Alert.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/alert/AlertDescription.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/alert/AlertTitle.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/alert/index.ts",
     "distinct_slices": 1,
-    "slices": [
-      "scheduling"
-    ],
+    "slices": ["scheduling"],
     "importers": 1,
     "flag": "SINGLE-IMPORTER -> demote into that slice"
   },
   {
     "module": "ui/badge/Badge.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/badge/index.ts",
     "distinct_slices": 3,
-    "slices": [
-      "app",
-      "billing",
-      "scheduling"
-    ],
+    "slices": ["app", "billing", "scheduling"],
     "importers": 3,
     "flag": ""
   },
   {
     "module": "ui/button/Button.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/button/index.ts",
     "distinct_slices": 2,
-    "slices": [
-      "billing",
-      "scheduling"
-    ],
+    "slices": ["billing", "scheduling"],
     "importers": 3,
     "flag": ""
   },
   {
     "module": "ui/card/Card.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/CardContent.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/CardDescription.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/CardFooter.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/CardHeader.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/CardTitle.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/card/index.ts",
     "distinct_slices": 3,
-    "slices": [
-      "app",
-      "billing",
-      "scheduling"
-    ],
+    "slices": ["app", "billing", "scheduling"],
     "importers": 5,
     "flag": ""
   },
   {
     "module": "ui/input/Input.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/input/index.ts",
     "distinct_slices": 1,
-    "slices": [
-      "scheduling"
-    ],
+    "slices": ["scheduling"],
     "importers": 1,
     "flag": "SINGLE-IMPORTER -> demote into that slice"
   },
   {
     "module": "ui/label/Label.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/label/index.ts",
     "distinct_slices": 1,
-    "slices": [
-      "scheduling"
-    ],
+    "slices": ["scheduling"],
     "importers": 1,
     "flag": "SINGLE-IMPORTER -> demote into that slice"
   },
   {
     "module": "ui/table/Table.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableBody.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableCaption.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableCell.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableHead.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableHeader.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/TableRow.vue",
     "distinct_slices": 1,
-    "slices": [
-      "shared"
-    ],
+    "slices": ["shared"],
     "importers": 1,
     "flag": "shared-internal only"
   },
   {
     "module": "ui/table/index.ts",
     "distinct_slices": 1,
-    "slices": [
-      "billing"
-    ],
+    "slices": ["billing"],
     "importers": 2,
     "flag": "SINGLE-IMPORTER -> demote into that slice"
   }

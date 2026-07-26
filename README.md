@@ -13,8 +13,8 @@
 
 Vise is a small Vue 3 + [Vite+](https://viteplus.dev) monorepo (`apps/web`) that
 demonstrates one opinionated frontend architecture and **enforces it by machine**.
-The bet: if the structure is *derivable*, two developers implementing the same
-request independently produce the same layout — so *"where does this go?"* has an
+The bet: if the structure is _derivable_, two developers implementing the same
+request independently produce the same layout — so _"where does this go?"_ has an
 answer, not an argument. Boundaries are checked in CI, not in code review.
 
 > [!IMPORTANT]
@@ -25,11 +25,11 @@ answer, not an argument. Boundaries are checked in CI, not in code review.
 
 ## What it demonstrates
 
-- **Two axes → one home.** Every file has a coordinate: a *domain slice*
-  (`billing`, `scheduling`) × a *stability layer* (`core` → `data` → `ui`, plus
+- **Two axes → one home.** Every file has a coordinate: a _domain slice_
+  (`billing`, `scheduling`) × a _stability layer_ (`core` → `data` → `ui`, plus
   the global `shared` and `app` bands). The coordinate is the folder.
 - **A framework-free domain core.** Delete Vue and every `core/` folder still
-  compiles and its tests still pass. Core is *pure*: no clock, no randomness, no IO.
+  compiles and its tests still pass. Core is _pure_: no clock, no randomness, no IO.
 - **Slice isolation.** Slices are silos that reach each other only through a tiny
   public `index.ts`; deep imports don't even resolve.
 - **Derivable, not disciplined.** The rules are encoded once in
@@ -84,11 +84,11 @@ vp check              # lint + typecheck + tests
 
 ## Documentation
 
-| Doc | What's inside |
-| --- | --- |
-| [Architecture](docs/architecture.md) | The two axes, the layers, the folder layout, the dependency graph |
-| [The constitution](docs/constitution.md) | The 8 non-negotiable rules, their corollaries, and the helper questions |
-| [Adding a feature](docs/adding-a-feature.md) | Junior field guide: where things go, the workflow, and decoding a red CI |
-| [Worked examples](docs/worked-examples.md) | Six real requests resolved by precedent |
-| [Enforcement](docs/enforcement.md) | Every rule, the tool that checks it, the baseline ratchet, anti-loosening |
+| Doc                                            | What's inside                                                                    |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| [Architecture](docs/architecture.md)           | The two axes, the layers, the folder layout, the dependency graph                |
+| [The constitution](docs/constitution.md)       | The 8 non-negotiable rules, their corollaries, and the helper questions          |
+| [Adding a feature](docs/adding-a-feature.md)   | Junior field guide: where things go, the workflow, and decoding a red CI         |
+| [Worked examples](docs/worked-examples.md)     | Six real requests resolved by precedent                                          |
+| [Enforcement](docs/enforcement.md)             | Every rule, the tool that checks it, the baseline ratchet, anti-loosening        |
 | [Reading the graph](docs/reading-the-graph.md) | How to generate a focused dependency graph and what to look for when reading one |

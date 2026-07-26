@@ -23,13 +23,16 @@ async function onSubmit(): Promise<void> {
 
 <template>
   <form class="space-y-3" @submit.prevent="onSubmit">
-    <div class="grid gap-1.5">
-      <Label for="reschedule-start">New start</Label>
-      <Input id="reschedule-start" v-model="start" type="datetime-local" />
-    </div>
-    <div class="grid gap-1.5">
-      <Label for="reschedule-end">New end</Label>
-      <Input id="reschedule-end" v-model="end" type="datetime-local" />
+    <p class="text-sm font-medium">Reschedule appointment</p>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <div class="grid gap-1.5">
+        <Label for="reschedule-start">New start</Label>
+        <Input id="reschedule-start" v-model="start" type="datetime-local" />
+      </div>
+      <div class="grid gap-1.5">
+        <Label for="reschedule-end">New end</Label>
+        <Input id="reschedule-end" v-model="end" type="datetime-local" />
+      </div>
     </div>
     <Alert v-if="error" variant="destructive">
       <AlertTitle>Cannot reschedule</AlertTitle>

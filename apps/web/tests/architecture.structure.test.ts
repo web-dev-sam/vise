@@ -2,7 +2,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { bannedDirectoryNames, coreImpurityTokens, domainNouns, slices } from "../../../architecture.config.ts";
+import {
+  bannedDirectoryNames,
+  coreImpurityTokens,
+  domainNouns,
+  slices,
+} from "../../../architecture.config.ts";
 
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 
@@ -21,13 +26,42 @@ const dirs = allPaths.filter((p) => statSync(p).isDirectory());
 const files = allPaths.filter((p) => statSync(p).isFile());
 const rel = (p: string) => relative(srcDir, p).split("\\").join("/");
 
+// Collect snake_case type/interface members (unvalidated server shapes) from a
+// source file (see the "server shapes stay in data/dto.ts" test).
+function serverShapeMembers(source: string): string[] {
+  const out: string[] = [];
+  const opensType = /(?:^|\s)(?:export\s+)?(?:interface\s+\w+|type\s+\w+\s*=)/;
+  const member = /[{;,]\s*(?:readonly\s+)?([a-z][a-zA-Z0-9]*_[a-zA-Z0-9_]*)\s*\??\s*:/g;
+  let inType = false;
+  let depth = 0;
+  let buf = "";
+  for (const line of source.split("\n")) {
+    if (!inType) {
+      if (!(opensType.test(line) && line.includes("{"))) continue;
+      inType = true;
+      depth = 0;
+      buf = "";
+    }
+    buf += `${line}\n`;
+    for (const ch of line) {
+      if (ch === "{") depth += 1;
+      else if (ch === "}") depth -= 1;
+    }
+    if (depth > 0) continue;
+    inType = false;
+    for (let m = member.exec(buf); m; m = member.exec(buf)) out.push(m[1] as string);
+    buf = "";
+  }
+  return out;
+}
+
 describe("slice shape", () => {
   it("every slice contains exactly core, data, ui, routes.ts, index.ts", () => {
     const sliceRoot = join(srcDir, "slices");
-    const present = readdirSync(sliceRoot).sort();
-    expect(present).toEqual([...slices].sort());
+    const present = readdirSync(sliceRoot).toSorted();
+    expect(present).toEqual([...slices].toSorted());
     for (const slice of present) {
-      const entries = readdirSync(join(sliceRoot, slice)).sort();
+      const entries = readdirSync(join(sliceRoot, slice)).toSorted();
       expect(entries).toEqual(["core", "data", "index.ts", "routes.ts", "ui"]);
     }
   });
@@ -42,15 +76,18 @@ describe("slice shape", () => {
 
 describe("SFC placement", () => {
   it("no .vue file lives outside slices/*/ui, app/layouts, app/views, shared/ui", () => {
-    const allowed = (path: string): boolean =>
-      /^slices\/[^/]+\/ui\//.test(path) ||
-      path.startsWith("app/layouts/") ||
-      path.startsWith("app/views/") ||
-      path.startsWith("shared/ui/");
     const stray = files
       .filter((f) => f.endsWith(".vue"))
       .map(rel)
-      .filter((p) => !allowed(p));
+      .filter(
+        (p) =>
+          !(
+            /^slices\/[^/]+\/ui\//.test(p) ||
+            p.startsWith("app/layouts/") ||
+            p.startsWith("app/views/") ||
+            p.startsWith("shared/ui/")
+          ),
+      );
     expect(stray).toEqual([]);
   });
 });
@@ -141,29 +178,6 @@ describe("server shapes stay in data/dto.ts", () => {
   // server-shape — dto.ts (the schema) and mocks.ts (the mock server) — and are
   // mapped to core entities before anything else sees them (DTOs never leak
   // upward). This catches an inline DTO smuggled into data/queries.ts et al.
-  const serverShapeMembers = (source: string): string[] => {
-    const out: string[] = [];
-    const opensType = /(?:^|\s)(?:export\s+)?(?:interface\s+\w+|type\s+\w+\s*=)/;
-    const member = /[{;,]\s*(?:readonly\s+)?([a-z][a-zA-Z0-9]*_[a-zA-Z0-9_]*)\s*\??\s*:/g;
-    let inType = false;
-    let depth = 0;
-    let buf = "";
-    for (const line of source.split("\n")) {
-      if (!inType) {
-        if (!(opensType.test(line) && line.includes("{"))) continue;
-        inType = true;
-        depth = 0;
-        buf = "";
-      }
-      buf += `${line}\n`;
-      for (const ch of line) depth += ch === "{" ? 1 : ch === "}" ? -1 : 0;
-      if (depth > 0) continue;
-      inType = false;
-      for (let m = member.exec(buf); m; m = member.exec(buf)) out.push(m[1] as string);
-      buf = "";
-    }
-    return out;
-  };
 
   it("no snake_case type member is declared outside data/dto.ts", () => {
     const offenders: string[] = [];

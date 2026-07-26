@@ -1,8 +1,6 @@
 import { onMounted, ref } from "vue";
 import type { Ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useInvoiceCacheStore } from "../../data/store";
-import type { Invoice } from "../../core/types";
 // ─── CANONICAL CROSS-SLICE IMPORT ───────────────────────────────────────────
 // Billing shows the appointment date each invoice was generated from. It gets
 // this through scheduling's PUBLIC surface (the @slices/scheduling alias) — a
@@ -12,6 +10,8 @@ import type { Invoice } from "../../core/types";
 // import — done correctly here on purpose.
 import { fetchAppointmentSummaries } from "@slices/scheduling";
 import type { AppointmentSummary } from "@slices/scheduling";
+import { useInvoiceCacheStore } from "../../data/store";
+import type { Invoice } from "../../core/types";
 
 export interface InvoiceListState {
   readonly invoices: Ref<Invoice[]>;

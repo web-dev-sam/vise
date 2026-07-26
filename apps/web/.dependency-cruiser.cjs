@@ -21,5 +21,12 @@ module.exports = {
     },
     tsPreCompilationDeps: true,
     moduleSystems: ["es6", "cjs"],
+    // Keep node_modules out of the rendered graph (`arch:graph`) WITHOUT hiding it
+    // from analysis: this is a report-time filter, so orphan/reachability rules
+    // still see real third-party edges. A cruise-level --exclude/doNotFollow would
+    // strip those edges from analysis and mislabel framework-only modules as orphans.
+    reporterOptions: {
+      ddot: { filters: { exclude: { path: "node_modules" } } },
+    },
   },
 };

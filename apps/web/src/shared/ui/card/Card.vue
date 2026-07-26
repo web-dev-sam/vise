@@ -8,7 +8,12 @@ const props = defineProps<{ class?: HTMLAttributes["class"] }>();
 <template>
   <div
     data-slot="card"
-    :class="cn('rounded-xl border bg-card text-card-foreground shadow-sm', props.class)"
+    :class="
+      cn(
+        'rounded-xl border bg-card text-card-foreground shadow-card transition-shadow',
+        props.class,
+      )
+    "
   >
     <slot />
   </div>

@@ -218,7 +218,8 @@ const cases: readonly EnforcementCase[] = [
     files: [
       {
         path: "slices/billing/ui/composables/__violation.ts",
-        content: "export async function load(name: string) {\n  return import(`@slices/${name}`);\n}\n",
+        content:
+          "export async function load(name: string) {\n  return import(`@slices/${name}`);\n}\n",
       },
     ],
   },

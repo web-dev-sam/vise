@@ -21,12 +21,14 @@ example](worked-examples.md).
    `shared/lib` re-export. Optimistic UI state (an in-place patch + rollback) is a
    `ui/` concern; promote a transform to `core/` only when it encodes a business
    invariant, not because it happens to be pure.
+
 5. A component belongs to the slice it is _about_, not the slice that first used it.
 
    **Corollary — about vs. reads.** A capability that is _about_ one slice but
    _reads_ another belongs to the slice it is about, consuming the other only
    through its public `index.ts`. Create a new slice only when the capability has
    its own reason to change, independent of both.
+
 6. **Concern = reason to change.** Two pieces of code share a concern iff they
    change for the same reason. A "reusable" component that changes for two
    different reasons in two contexts is two components wearing one costume — split it.

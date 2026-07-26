@@ -12,8 +12,11 @@ export interface RescheduleState {
   readonly submit: () => Promise<Appointment | null>;
 }
 
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
 function toLocalInput(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 

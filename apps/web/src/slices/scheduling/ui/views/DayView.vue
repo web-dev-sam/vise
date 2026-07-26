@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { CalendarDays, CalendarX, TriangleAlert } from "lucide-vue-next";
+import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card";
+import { PageHeader } from "@shared/ui/page-header";
 import { formatDate } from "@shared/lib/format";
 import { useDaySchedule } from "../composables/useDaySchedule";
 import AppointmentCard from "../components/AppointmentCard.vue";
@@ -24,18 +26,29 @@ function onRescheduled(): void {
 </script>
 
 <template>
-  <Card>
-    <CardHeader>
-      <CardTitle>Day schedule — {{ formatDate(day) }}</CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-4">
-      <p v-if="loading" class="text-sm text-muted-foreground">Loading…</p>
-      <template v-else>
-        <p v-if="appointments.length === 0" class="text-sm text-muted-foreground">
-          No appointments.
-        </p>
+  <div class="space-y-8">
+    <PageHeader title="Day schedule" :description="formatDate(day)">
+      <template #icon><CalendarDays /></template>
+      <template #actions>
+        <Badge v-if="conflictIds.size > 0" variant="destructive">
+          <TriangleAlert />
+          {{ conflictIds.size }} conflicts
+        </Badge>
+      </template>
+    </PageHeader>
+
+    <p v-if="loading" class="text-sm text-muted-foreground">Loading…</p>
+    <template v-else>
+      <div
+        v-if="appointments.length === 0"
+        class="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center text-muted-foreground"
+      >
+        <CalendarX class="size-8 opacity-60" />
+        <p class="text-sm">No appointments scheduled for this day.</p>
+      </div>
+      <div v-else class="space-y-4">
         <div v-for="appointment in appointments" :key="appointment.id" class="space-y-2">
-          <div class="flex items-start gap-2">
+          <div class="flex items-start gap-3">
             <div class="flex-1">
               <AppointmentCard
                 :appointment="appointment"
@@ -44,7 +57,7 @@ function onRescheduled(): void {
             </div>
             <Button
               v-if="appointment.status === 'scheduled'"
-              variant="outline"
+              :variant="selectedId === appointment.id ? 'secondary' : 'outline'"
               size="sm"
               @click="toggle(appointment)"
             >
@@ -54,11 +67,11 @@ function onRescheduled(): void {
           <RescheduleForm
             v-if="selectedId === appointment.id"
             :appointment="appointment"
-            class="rounded-md border p-4"
+            class="rounded-xl border border-border/70 bg-muted/30 p-4"
             @rescheduled="onRescheduled"
           />
         </div>
-      </template>
-    </CardContent>
-  </Card>
+      </div>
+    </template>
+  </div>
 </template>

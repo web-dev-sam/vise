@@ -278,15 +278,51 @@ export default function (plop) {
       },
     ],
     actions: () => [
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/core/types.ts", template: SLICE_CORE_TYPES },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/core/rules.ts", template: SLICE_CORE_RULES },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/data/dto.ts", template: SLICE_DATA_DTO },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/data/mappers.ts", template: SLICE_DATA_MAPPERS },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/data/queries.ts", template: SLICE_DATA_QUERIES },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/data/mocks.ts", template: SLICE_DATA_MOCKS },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/ui/views/{{pascalCase name}}View.vue", template: SLICE_UI_VIEW },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/routes.ts", template: SLICE_ROUTES },
-      { type: "add", path: "apps/web/src/slices/{{kebabCase name}}/index.ts", template: SLICE_INDEX },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/core/types.ts",
+        template: SLICE_CORE_TYPES,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/core/rules.ts",
+        template: SLICE_CORE_RULES,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/data/dto.ts",
+        template: SLICE_DATA_DTO,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/data/mappers.ts",
+        template: SLICE_DATA_MAPPERS,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/data/queries.ts",
+        template: SLICE_DATA_QUERIES,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/data/mocks.ts",
+        template: SLICE_DATA_MOCKS,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/ui/views/{{pascalCase name}}View.vue",
+        template: SLICE_UI_VIEW,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/routes.ts",
+        template: SLICE_ROUTES,
+      },
+      {
+        type: "add",
+        path: "apps/web/src/slices/{{kebabCase name}}/index.ts",
+        template: SLICE_INDEX,
+      },
       {
         type: "modify",
         path: "architecture.config.ts",
@@ -309,7 +345,8 @@ export default function (plop) {
         type: "modify",
         path: "apps/web/src/app/providers/msw.ts",
         pattern: /(import \{ setupWorker \} from "msw\/browser";\n)/,
-        template: '$1import { {{camelCase name}}MockHandlers } from "@slices/{{kebabCase name}}";\n',
+        template:
+          '$1import { {{camelCase name}}MockHandlers } from "@slices/{{kebabCase name}}";\n',
       },
       {
         type: "modify",
@@ -324,18 +361,21 @@ export default function (plop) {
   // new file (asks the helper questions)
   // =========================================================================
   plop.setGenerator("file", {
-    description: "Add one file, routed to the right slice + layer by the constitution's helper questions.",
+    description:
+      "Add one file, routed to the right slice + layer by the constitution's helper questions.",
     prompts: [
       {
         type: "list",
         name: "scope",
-        message: "What business reason would make this change? Pick the slice (or shared for a domain-free primitive):",
+        message:
+          "What business reason would make this change? Pick the slice (or shared for a domain-free primitive):",
         choices: [...existingSlices(), "shared"],
       },
       {
         type: "confirm",
         name: "deleteVue",
-        message: "Would this still make sense if you deleted Vue tomorrow? (pure logic/rules → core/)",
+        message:
+          "Would this still make sense if you deleted Vue tomorrow? (pure logic/rules → core/)",
         default: false,
         when: (answers) => answers.scope !== "shared",
       },
@@ -351,7 +391,8 @@ export default function (plop) {
         name: "uiKind",
         message: "Which UI artifact? (slices/<slice>/ui)",
         choices: ["view", "component", "composable"],
-        when: (answers) => answers.scope !== "shared" && !answers.deleteVue && !answers.talksToServer,
+        when: (answers) =>
+          answers.scope !== "shared" && !answers.deleteVue && !answers.talksToServer,
       },
       {
         type: "list",
@@ -371,31 +412,66 @@ export default function (plop) {
       if (answers.scope === "shared") {
         if (answers.sharedKind === "ui") {
           return [
-            { type: "add", path: "apps/web/src/shared/ui/{{kebabCase name}}/{{pascalCase name}}.vue", template: SHARED_UI_VUE },
-            { type: "add", path: "apps/web/src/shared/ui/{{kebabCase name}}/index.ts", template: SHARED_UI_INDEX },
+            {
+              type: "add",
+              path: "apps/web/src/shared/ui/{{kebabCase name}}/{{pascalCase name}}.vue",
+              template: SHARED_UI_VUE,
+            },
+            {
+              type: "add",
+              path: "apps/web/src/shared/ui/{{kebabCase name}}/index.ts",
+              template: SHARED_UI_INDEX,
+            },
             WIRE_REMINDER,
           ];
         }
         return [
-          { type: "add", path: "apps/web/src/shared/lib/{{camelCase name}}.ts", template: SHARED_LIB },
+          {
+            type: "add",
+            path: "apps/web/src/shared/lib/{{camelCase name}}.ts",
+            template: SHARED_LIB,
+          },
           WIRE_REMINDER,
         ];
       }
 
       const base = `apps/web/src/slices/${answers.scope}`;
       if (answers.deleteVue) {
-        return [{ type: "add", path: `${base}/core/{{camelCase name}}.ts`, template: CORE_FILE }, WIRE_REMINDER];
+        return [
+          { type: "add", path: `${base}/core/{{camelCase name}}.ts`, template: CORE_FILE },
+          WIRE_REMINDER,
+        ];
       }
       if (answers.talksToServer) {
-        return [{ type: "add", path: `${base}/data/{{camelCase name}}.ts`, template: DATA_FILE }, WIRE_REMINDER];
+        return [
+          { type: "add", path: `${base}/data/{{camelCase name}}.ts`, template: DATA_FILE },
+          WIRE_REMINDER,
+        ];
       }
       if (answers.uiKind === "view") {
-        return [{ type: "add", path: `${base}/ui/views/{{pascalCase name}}View.vue`, template: UI_VIEW }, WIRE_REMINDER];
+        return [
+          { type: "add", path: `${base}/ui/views/{{pascalCase name}}View.vue`, template: UI_VIEW },
+          WIRE_REMINDER,
+        ];
       }
       if (answers.uiKind === "component") {
-        return [{ type: "add", path: `${base}/ui/components/{{pascalCase name}}.vue`, template: UI_COMPONENT }, WIRE_REMINDER];
+        return [
+          {
+            type: "add",
+            path: `${base}/ui/components/{{pascalCase name}}.vue`,
+            template: UI_COMPONENT,
+          },
+          WIRE_REMINDER,
+        ];
       }
-      return [{ type: "add", path: `${base}/ui/composables/use{{pascalCase name}}.ts`, template: UI_COMPOSABLE }, WIRE_REMINDER];
+      return [
+        {
+          type: "add",
+          path: `${base}/ui/composables/use{{pascalCase name}}.ts`,
+          template: UI_COMPOSABLE,
+        },
+        WIRE_REMINDER,
+      ];
     },
   });
 }

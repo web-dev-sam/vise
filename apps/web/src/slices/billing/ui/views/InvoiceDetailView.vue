@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRoute } from "vue-router";
+import { RouterLink, useRoute } from "vue-router";
+import { ArrowLeft, ReceiptText } from "lucide-vue-next";
 import { Button } from "@shared/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@shared/ui/card";
+import { Card, CardContent, CardFooter } from "@shared/ui/card";
+import { PageHeader } from "@shared/ui/page-header";
 import { formatDate, formatMoney } from "@shared/lib/format";
 import { useInvoiceDetail } from "../composables/useInvoiceDetail";
 import InvoiceStatusBadge from "../components/InvoiceStatusBadge.vue";
@@ -14,34 +16,51 @@ const { invoice, loading, totals, canVoidInvoice, voidCurrent } = useInvoiceDeta
 </script>
 
 <template>
-  <p v-if="loading && !invoice" class="text-sm text-muted-foreground">Loading…</p>
-  <Card v-else-if="invoice">
-    <CardHeader class="flex-row items-center justify-between">
-      <div class="flex items-center gap-3">
-        <CardTitle>{{ invoice.number }}</CardTitle>
-        <InvoiceStatusBadge :status="invoice.status" />
-      </div>
-      <span class="text-sm text-muted-foreground">Due {{ formatDate(invoice.dueDate) }}</span>
-    </CardHeader>
-    <CardContent class="space-y-6">
-      <InvoiceLinesTable :lines="invoice.lines" :currency="invoice.currency" />
-      <dl class="ml-auto w-64 space-y-1 text-sm">
-        <div class="flex justify-between">
-          <dt class="text-muted-foreground">Subtotal</dt>
-          <dd>{{ formatMoney(totals.subtotalMinor, invoice.currency) }}</dd>
-        </div>
-        <div class="flex justify-between">
-          <dt class="text-muted-foreground">Tax</dt>
-          <dd>{{ formatMoney(totals.taxMinor, invoice.currency) }}</dd>
-        </div>
-        <div class="flex justify-between border-t pt-1 font-semibold">
-          <dt>Total</dt>
-          <dd>{{ formatMoney(totals.totalMinor, invoice.currency) }}</dd>
-        </div>
-      </dl>
-    </CardContent>
-    <CardFooter>
-      <Button v-if="canVoidInvoice" variant="destructive" @click="voidCurrent">Void invoice</Button>
-    </CardFooter>
-  </Card>
+  <div class="space-y-6">
+    <RouterLink
+      to="/invoices"
+      class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+    >
+      <ArrowLeft class="size-4" />
+      All invoices
+    </RouterLink>
+
+    <p v-if="loading && !invoice" class="text-sm text-muted-foreground">Loading…</p>
+
+    <template v-else-if="invoice">
+      <PageHeader :title="invoice.number" :description="`Due ${formatDate(invoice.dueDate)}`">
+        <template #icon><ReceiptText /></template>
+        <template #actions>
+          <InvoiceStatusBadge :status="invoice.status" />
+        </template>
+      </PageHeader>
+
+      <Card>
+        <CardContent class="space-y-6 pt-6">
+          <InvoiceLinesTable :lines="invoice.lines" :currency="invoice.currency" />
+          <dl class="ml-auto w-full max-w-xs space-y-2 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-muted-foreground">Subtotal</dt>
+              <dd class="tabular-nums">
+                {{ formatMoney(totals.subtotalMinor, invoice.currency) }}
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted-foreground">Tax</dt>
+              <dd class="tabular-nums">{{ formatMoney(totals.taxMinor, invoice.currency) }}</dd>
+            </div>
+            <div
+              class="flex justify-between border-t border-border/60 pt-2 text-base font-semibold"
+            >
+              <dt>Total</dt>
+              <dd class="tabular-nums">{{ formatMoney(totals.totalMinor, invoice.currency) }}</dd>
+            </div>
+          </dl>
+        </CardContent>
+        <CardFooter v-if="canVoidInvoice" class="border-t border-border/60 pt-6">
+          <Button variant="destructive" @click="voidCurrent">Void invoice</Button>
+        </CardFooter>
+      </Card>
+    </template>
+  </div>
 </template>

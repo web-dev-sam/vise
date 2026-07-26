@@ -28,9 +28,7 @@
       "problemMatcher": {
         "owner": "depcruise",
         "source": "dependency-cruiser",
-        "fileLocation": [
-          "absolute"
-        ],
+        "fileLocation": ["absolute"],
         "pattern": {
           "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning|info)\\s+(.*)$",
           "file": 1,
@@ -59,9 +57,7 @@
       "problemMatcher": {
         "owner": "depcruise",
         "source": "dependency-cruiser",
-        "fileLocation": [
-          "absolute"
-        ],
+        "fileLocation": ["absolute"],
         "pattern": {
           "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning|info)\\s+(.*)$",
           "file": 1,
@@ -113,10 +109,7 @@
       },
       "problemMatcher": {
         "owner": "vue-tsc",
-        "fileLocation": [
-          "relative",
-          "${workspaceFolder}/apps/web"
-        ],
+        "fileLocation": ["relative", "${workspaceFolder}/apps/web"],
         "pattern": {
           "regexp": "^(.+?)\\((\\d+),(\\d+)\\): (error|warning) (TS\\d+): (.*)$",
           "file": 1,
@@ -170,13 +163,7 @@
         "color": "terminal.ansiMagenta"
       },
       "dependsOrder": "sequence",
-      "dependsOn": [
-        "_lint",
-        "_typecheck",
-        "_test",
-        "check all",
-        "_enforcement"
-      ],
+      "dependsOn": ["_lint", "_typecheck", "_test", "check all", "_enforcement"],
       "problemMatcher": []
     },
     {

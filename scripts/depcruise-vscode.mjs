@@ -47,7 +47,11 @@ try {
   process.exit(status && status !== 0 ? status : 1);
 }
 
-const severityLabel = (s) => (s === "warn" ? "warning" : s === "info" ? "info" : "error");
+function severityLabel(s) {
+  if (s === "warn") return "warning";
+  if (s === "info") return "info";
+  return "error";
+}
 const violations = report.summary?.violations ?? [];
 for (const v of violations) {
   const from = v.from;
@@ -62,7 +66,9 @@ const errors = report.summary?.error ?? 0;
 const warnings = report.summary?.warn ?? 0;
 const where = target === "src" ? "apps/web/src" : target;
 if (violations.length === 0) {
-  console.log(`✔ no boundary violations in ${where} (${report.summary?.totalCruised ?? 0} modules cruised)`);
+  console.log(
+    `✔ no boundary violations in ${where} (${report.summary?.totalCruised ?? 0} modules cruised)`,
+  );
 } else {
   console.log(`✖ ${errors} error(s), ${warnings} warning(s) in ${where}`);
 }

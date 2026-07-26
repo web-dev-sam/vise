@@ -30,7 +30,19 @@ const focus = rel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const { status, stdout } = spawnSync(
   "vp",
-  ["exec", "depcruise", "src", "--config", ".dependency-cruiser.cjs", "--output-type", "dot", "--focus", focus, "--exclude", "node_modules"],
+  [
+    "exec",
+    "depcruise",
+    "src",
+    "--config",
+    ".dependency-cruiser.cjs",
+    "--output-type",
+    "dot",
+    "--focus",
+    focus,
+    "--exclude",
+    "node_modules",
+  ],
   { cwd: appDir, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 },
 );
 
@@ -52,12 +64,14 @@ console.log(`graph: focused on ${rel}`);
 console.log(`graph: wrote ${outFile}`);
 
 // Best-effort open in the default viewer (renders the SVG); never fatal.
-const [opener, openArgs] =
-  process.platform === "darwin"
-    ? ["open", [outFile]]
-    : process.platform === "win32"
-      ? ["cmd", ["/c", "start", "", outFile]]
-      : ["xdg-open", [outFile]];
+let opener = "xdg-open";
+let openArgs = [outFile];
+if (process.platform === "darwin") {
+  opener = "open";
+} else if (process.platform === "win32") {
+  opener = "cmd";
+  openArgs = ["/c", "start", "", outFile];
+}
 try {
   const child = spawn(opener, openArgs, { stdio: "ignore", detached: true });
   child.on("error", () => {});

@@ -155,7 +155,218 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
         ],
       },
     },
+    // Tooling & generated files: exempt the source-oriented rules that are
+    // inherently incompatible with each file TYPE. Unprefixed **/ globs so they
+    // match at either root (repo root for `vp lint`, apps/web for .oxlintrc.json)
+    // and never touch the boundary rules above (a different, merged rule set).
+    {
+      // Build/config entrypoints must default-export their config object.
+      files: ["**/*.config.*", "**/plopfile.mjs"],
+      rules: { "import/no-default-export": "off" },
+    },
+    {
+      // CommonJS modules (.cjs) legitimately use require()/module.exports.
+      files: ["**/*.cjs"],
+      rules: {
+        "import/no-commonjs": "off",
+        "import/no-dynamic-require": "off",
+        "import/extensions": "off",
+        "typescript/no-require-imports": "off",
+        "typescript/no-var-requires": "off",
+      },
+    },
+    {
+      // Node-run tooling & tests import sibling .ts files WITH the extension
+      // (Node's ESM resolver / type-stripping needs it); `never` can't apply.
+      files: ["**/scripts/**", "**/tests/**"],
+      rules: { "import/extensions": "off" },
+    },
+    {
+      // Generated MSW worker: vendored, keeps its blanket eslint-disable header.
+      files: ["**/mockServiceWorker.js"],
+      rules: { "unicorn/no-abusive-eslint-disable": "off" },
+    },
   ];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Oxlint: the shared rule baseline applied to EVERY js/ts/vue file, layered   */
+/* on top of the architecture-boundary overrides above. Lives here (the single */
+/* source of truth) so `.oxlintrc.json` (IDE) and vite.config.ts (`vp lint`)   */
+/* can never drift.                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Local mirrors of Oxlint's config value types — the `oxlint` package is a
+ * transitive dependency, not resolvable as a bare import here. Kept loose on
+ * purpose: these objects are validated by Oxlint itself, not by TypeScript.
+ */
+type OxlintSeverity = "allow" | "off" | "warn" | "error" | "deny";
+type OxlintRuleEntry = OxlintSeverity | [OxlintSeverity, ...unknown[]];
+type OxlintRuleMap = Record<string, OxlintRuleEntry>;
+
+/**
+ * Built-in Oxlint plugins to enable. Setting `plugins` REPLACES Oxlint's
+ * default set, so every plugin our rules reference is restated: `import` and
+ * `vue` are off by default; `eslint`/`typescript`/`unicorn`/`oxc` back the core
+ * and category rules.
+ */
+export const oxlintPlugins: string[] = ["eslint", "typescript", "unicorn", "oxc", "import", "vue"];
+
+/** Category baselines. Every rule in the category fires at this severity unless
+ *  a specific rule below sets its own. */
+export const oxlintCategories: Record<string, OxlintSeverity> = {
+  correctness: "error",
+  suspicious: "error",
+  perf: "warn",
+};
+
+/**
+ * The shared rule set. Rules needing type information (e.g. `no-unsafe-*`,
+ * `no-misused-promises`, `no-unnecessary-condition`, `prefer-nullish-coalescing`)
+ * only run where Oxlint is type-aware; `vp lint`/CI is syntactic
+ * (typeAware:false, see vite.config.ts), so those are enforced by editors or a
+ * `vp lint --type-aware` pass, not the fast inner loop. A few high-churn rules
+ * are intentionally left off (noted inline).
+ */
+export const oxlintRules: OxlintRuleMap = {
+  // vue
+  "vue/no-import-compiler-macros": "error",
+  "vue/define-props-declaration": ["error", "type-based"],
+  "vue/define-emits-declaration": ["error", "type-literal"],
+  "vue/no-multiple-slot-args": "error",
+  // "vue/define-props-destructuring": "error", // high-churn — off for now
+
+  // typescript
+  "typescript/use-unknown-in-catch-callback-variable": "error",
+  "typescript/strict-void-return": "error",
+  "typescript/return-await": "error",
+  "typescript/restrict-plus-operands": "error",
+  "typescript/require-await": "error",
+  "typescript/promise-function-async": "error",
+  "typescript/prefer-ts-expect-error": "error",
+  "typescript/prefer-regexp-exec": "error",
+  "typescript/prefer-reduce-type-parameter": "error",
+  "typescript/prefer-optional-chain": "error",
+  "typescript/prefer-nullish-coalescing": "error",
+  "typescript/prefer-includes": "error",
+  "typescript/prefer-function-type": "error",
+  "typescript/prefer-for-of": "error",
+  "typescript/prefer-find": "error",
+  "typescript/only-throw-error": "error",
+  "typescript/non-nullable-type-assertion-style": "error",
+  "typescript/no-var-requires": "error",
+  "typescript/no-unsafe-return": "error",
+  "typescript/no-unsafe-function-type": "error",
+  "typescript/no-unnecessary-qualifier": "error",
+  "typescript/no-unnecessary-condition": "error",
+  "typescript/no-restricted-types": [
+    "error",
+    {
+      types: {
+        Object: { message: "Avoid using Object as it is too general." },
+        object: { message: "Avoid using object as it is too general." },
+        "{}": {
+          message:
+            "Avoid using {} as it is too general. If you want to type an object that is always empty use EmptyObject instead.",
+        },
+      },
+    },
+  ],
+  "typescript/no-require-imports": "error",
+  "typescript/no-non-null-assertion": "error",
+  "typescript/no-misused-promises": "error",
+  "typescript/no-invalid-void-type": "error",
+  "typescript/no-import-type-side-effects": "error",
+  "typescript/no-empty-interface": "error",
+  "typescript/no-dynamic-delete": "error",
+  "typescript/explicit-module-boundary-types": "error",
+  "typescript/dot-notation": "error",
+  "typescript/consistent-type-imports": "error",
+  "typescript/consistent-type-exports": "error",
+  "typescript/consistent-type-assertions": "error",
+  "typescript/consistent-indexed-object-style": "error",
+  "typescript/consistent-generic-constructors": "error",
+  "typescript/ban-tslint-comment": "error",
+  "typescript/ban-ts-comment": [
+    "error",
+    {
+      "ts-ignore": false,
+      "ts-check": false,
+      "ts-expect-error": "allow-with-description",
+      "ts-nocheck": "allow-with-description",
+      minimumDescriptionLength: 32,
+    },
+  ],
+  "typescript/array-type": "error",
+  "typescript/adjacent-overload-signatures": "error",
+
+  // import
+  // "import/no-relative-parent-imports": "error", // conflicts with the slice
+  //   architecture: intra-slice relative imports (../core, ../components) are the
+  //   sanctioned pattern, and climbing OUT of a slice is already blocked by the
+  //   per-folder no-restricted-imports overrides above.
+  "import/no-unassigned-import": ["error", { allow: ["**/*.css"] }],
+  "import/no-mutable-exports": "error",
+  "import/no-dynamic-require": "error",
+  "import/no-duplicates": "error",
+  "import/no-default-export": "error",
+  "import/no-cycle": "error",
+  "import/no-commonjs": "error",
+  "import/named": "error",
+  "import/export": "error",
+  "import/newline-after-import": ["error", { count: 1 }],
+  "import/max-dependencies": ["error", { max: 10 }],
+  "import/first": ["error", "absolute-first"],
+  "import/extensions": ["error", "never", { vue: "always", css: "always", ignorePackages: true }],
+
+  // oxc
+  "oxc/bad-bitwise-operator": "error",
+  "oxc/no-barrel-file": "error",
+
+  // eslint core
+  "max-lines": ["error", { max: 1000 }],
+
+  // unicorn
+  "unicorn/text-encoding-identifier-case": "error",
+  "unicorn/no-abusive-eslint-disable": "error",
+  // "unicorn/no-array-for-each": "error", // medium-churn — off for now
+  "unicorn/no-document-cookie": "error",
+  "unicorn/no-length-as-slice-end": "error",
+  "unicorn/no-magic-array-flat-depth": "error",
+  "unicorn/prefer-modern-math-apis": "error",
+  // "unicorn/prefer-number-properties": "error", // medium-churn — off for now
+  "unicorn/catch-error-name": "error",
+  "unicorn/consistent-date-clone": "error",
+  "unicorn/consistent-existence-index-check": "error",
+  "unicorn/consistent-template-literal-escape": "error",
+  // "unicorn/filename-case": ["error", { case: "camelCase" }], // needs testing — off for now
+  "unicorn/no-nested-ternary": "error",
+  "unicorn/error-message": "error",
+  "unicorn/number-literal-case": "error",
+  "unicorn/numeric-separators-style": "error",
+  "unicorn/prefer-array-index-of": "error",
+  "unicorn/prefer-bigint-literals": "error",
+  // "unicorn/prefer-dom-node-text-content": "error", // low-churn — off for now
+  "unicorn/prefer-keyboard-event-key": "error",
+  "unicorn/prefer-negative-index": "error",
+  "unicorn/prefer-string-trim-start-end": "error",
+  "unicorn/require-array-join-separator": "error",
+};
+
+export interface OxlintBaseConfig {
+  plugins: string[];
+  categories: Record<string, OxlintSeverity>;
+  rules: OxlintRuleMap;
+}
+
+/** A fresh copy of the shared Oxlint baseline for each consumer. */
+export function buildOxlintBaseConfig(): OxlintBaseConfig {
+  return {
+    plugins: [...oxlintPlugins],
+    categories: { ...oxlintCategories },
+    rules: { ...oxlintRules },
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -272,9 +483,7 @@ export function buildForbiddenRules(): DepcruiseRule[] {
  * matches no rule here, so the graph is legal by construction, not by omission.
  * `$1` is the capturing group from each rule's `from.path` (the slice name).
  */
-export function buildAllowedRules(): Array<
-  Pick<DepcruiseRule, "from" | "to"> & { comment?: string }
-> {
+export function buildAllowedRules(): (Pick<DepcruiseRule, "from" | "to"> & { comment?: string })[] {
   return [
     // Anything may depend on external packages, node builtins and local assets.
     {

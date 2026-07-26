@@ -5,26 +5,48 @@
       "drill": "Delete Vue (core/ compiles + tests without vue/DOM)",
       "predicted": "nothing outside core/",
       "actual": "core compiles (tsc types:[]), 17/17 core tests pass with vue/pinia/router stubbed to throw + env=node; core reaches only @shared/lib/result (framework-free)",
-      "verdict": "PASS", "escape_hatch": "none"
+      "verdict": "PASS",
+      "escape_hatch": "none"
     },
     {
       "drill": "Reshape every DTO (casing + nesting + enum repr)",
       "predicted": "data/ only; fails if ui/ or core/ changes",
-      "actual_files": ["billing/data/dto.ts","billing/data/mappers.ts","billing/data/mocks.ts","scheduling/data/dto.ts","scheduling/data/mappers.ts","scheduling/data/mocks.ts","tests/billing.mappers.test.ts"],
+      "actual_files": [
+        "billing/data/dto.ts",
+        "billing/data/mappers.ts",
+        "billing/data/mocks.ts",
+        "scheduling/data/dto.ts",
+        "scheduling/data/mappers.ts",
+        "scheduling/data/mocks.ts",
+        "tests/billing.mappers.test.ts"
+      ],
       "actual": "6 data/ files + 1 data-level test. ZERO core/ or ui/ changes. +194/-163 lines.",
-      "verdict": "PASS — perfect containment; the DTO/mapper seam absorbed casing+nesting+enum changes with core and ui untouched", "escape_hatch": "none"
+      "verdict": "PASS — perfect containment; the DTO/mapper seam absorbed casing+nesting+enum changes with core and ui untouched",
+      "escape_hatch": "none"
     },
     {
       "drill": "Move a component billing -> scheduling (InvoiceStatusBadge)",
       "predicted": "the two slices; fails if it drags unrelated imports",
-      "actual_files": ["billing/ui/views/InvoiceListView.vue","billing/ui/views/InvoiceDetailView.vue","scheduling/index.ts","(moved) scheduling/ui/components/InvoiceStatusBadge.vue"],
+      "actual_files": [
+        "billing/ui/views/InvoiceListView.vue",
+        "billing/ui/views/InvoiceDetailView.vue",
+        "scheduling/index.ts",
+        "(moved) scheduling/ui/components/InvoiceStatusBadge.vue"
+      ],
       "actual": "4 files, +12/-3. FAILS-AS-PREDICTED: the badge dragged billing's InvoiceStatus type into scheduling (imported via @slices/billing), billing's own views now consume it back through @slices/scheduling, and depcruise no-circular fired on the billing<->scheduling cycle until routed through public indexes. Small blast radius but boundary-crossing.",
-      "verdict": "INFORMATIVE FAIL — demonstrates rule 5 (a component belongs to the slice it is ABOUT). The architecture correctly makes a domain-wrong move painful (cycle risk + cross-slice back-import). It is NOT a cheap/clean move because the move is semantically wrong.", "escape_hatch": "none"
+      "verdict": "INFORMATIVE FAIL — demonstrates rule 5 (a component belongs to the slice it is ABOUT). The architecture correctly makes a domain-wrong move painful (cycle risk + cross-slice back-import). It is NOT a cheap/clean move because the move is semantically wrong.",
+      "escape_hatch": "none"
     },
     {
       "drill": "Split billing into billing + invoicing",
       "predicted": "those slices + one route registration; fails if any other slice or app view changes",
-      "actual_files": ["NEW slices/invoicing/{core,data,ui,routes,index}","billing/{index,routes,data/queries,data/mocks}","app/router/index.ts","app/providers/msw.ts","architecture.config.ts (slices array +'invoicing')"],
+      "actual_files": [
+        "NEW slices/invoicing/{core,data,ui,routes,index}",
+        "billing/{index,routes,data/queries,data/mocks}",
+        "app/router/index.ts",
+        "app/providers/msw.ts",
+        "architecture.config.ts (slices array +'invoicing')"
+      ],
       "actual": "new invoicing slice + billing edits + app/router + app/providers/msw.ts + the slices-array registration. app/views/ClientOverviewView.vue UNCHANGED (billing kept the app-consumed fetchUnpaidInvoiceSummaries). dto.ts + mappers.ts had to be DUPLICATED into invoicing (dtos-stay-home forbids cross-slice sharing).",
       "verdict": "PARTIAL — contained to the two slices + composition root (router+msw are legitimate composition edits) + the sanctioned slice-registration config edit; app VIEWS untouched as predicted. Real costs surfaced: (1) any new slice requires a CODEOWNERS-gated architecture.config.ts edit (by design), (2) DTO/mapper code must be duplicated across the split because they can never be shared.",
       "escape_hatch": "none (rule-bypass); architecture.config.ts slices-array edit is the documented, review-gated mechanism for adding a slice, not a bypass"
@@ -32,7 +54,13 @@
     {
       "drill": "Replace Pinia with plain composables",
       "predicted": "one data/ folder; fails if any ui/ signature changes",
-      "actual_files": ["billing/data/store.ts (deleted)","billing/data/invoiceCache.ts (new plain composable)","billing/ui/composables/useInvoiceList.ts (internal impl only)","app/main.ts (createPinia removed)","apps/web/package.json (pinia removed)"],
+      "actual_files": [
+        "billing/data/store.ts (deleted)",
+        "billing/data/invoiceCache.ts (new plain composable)",
+        "billing/ui/composables/useInvoiceList.ts (internal impl only)",
+        "app/main.ts (createPinia removed)",
+        "apps/web/package.json (pinia removed)"
+      ],
       "actual": "data/ swap + app/main.ts + package.json + ui internal change. useInvoiceList's PUBLIC signature (InvoiceListState) UNCHANGED — predicted failure condition did NOT trigger.",
       "verdict": "PARTIAL-PASS — ui public signature held (the key claim), but the store's Pinia-ness leaked into ui (useInvoiceList used pinia's storeToRefs, so its internals had to change), and removing pinia forced app/main.ts + package.json edits. Not literally 'one data/ folder'.",
       "escape_hatch": "none"

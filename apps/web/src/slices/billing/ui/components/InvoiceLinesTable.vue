@@ -10,7 +10,7 @@ const props = defineProps<{ lines: readonly InvoiceLine[]; currency: string }>()
 <template>
   <Table>
     <TableHeader>
-      <TableRow>
+      <TableRow class="hover:bg-transparent">
         <TableHead>Description</TableHead>
         <TableHead class="text-right">Qty</TableHead>
         <TableHead class="text-right">Unit</TableHead>
@@ -22,17 +22,17 @@ const props = defineProps<{ lines: readonly InvoiceLine[]; currency: string }>()
     <TableBody>
       <TableRow v-for="line in props.lines" :key="line.id">
         <TableCell class="font-medium">{{ line.description }}</TableCell>
-        <TableCell class="text-right">{{ line.quantity }}</TableCell>
-        <TableCell class="text-right">{{
+        <TableCell class="text-right tabular-nums">{{ line.quantity }}</TableCell>
+        <TableCell class="text-right tabular-nums">{{
           formatMoney(line.unitPriceMinor, props.currency)
         }}</TableCell>
-        <TableCell class="text-right">{{
+        <TableCell class="text-right tabular-nums">{{
           formatMoney(lineSubtotalMinor(line), props.currency)
         }}</TableCell>
-        <TableCell class="text-right">{{
+        <TableCell class="text-right tabular-nums text-muted-foreground">{{
           formatMoney(lineTaxMinor(line), props.currency)
         }}</TableCell>
-        <TableCell class="text-right font-medium">{{
+        <TableCell class="text-right font-medium tabular-nums">{{
           formatMoney(lineTotalMinor(line), props.currency)
         }}</TableCell>
       </TableRow>

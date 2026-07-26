@@ -6,26 +6,9 @@
     "full_agree": true,
     "unc": 20,
     "q": 30,
-    "intersection": [
-      "billing/core",
-      "billing/data",
-      "billing/ui"
-    ],
-    "union": [
-      "billing/core",
-      "billing/data",
-      "billing/ui"
-    ],
-    "distribution": [
-      [
-        [
-          "billing/core",
-          "billing/data",
-          "billing/ui"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["billing/core", "billing/data", "billing/ui"],
+    "union": ["billing/core", "billing/data", "billing/ui"],
+    "distribution": [[["billing/core", "billing/data", "billing/ui"], 5]]
   },
   "R02": {
     "rid": "R02",
@@ -34,20 +17,9 @@
     "full_agree": true,
     "unc": 13,
     "q": 23,
-    "intersection": [
-      "billing/data"
-    ],
-    "union": [
-      "billing/data"
-    ],
-    "distribution": [
-      [
-        [
-          "billing/data"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["billing/data"],
+    "union": ["billing/data"],
+    "distribution": [[["billing/data"], 5]]
   },
   "R03": {
     "rid": "R03",
@@ -56,26 +28,9 @@
     "full_agree": true,
     "unc": 18,
     "q": 24,
-    "intersection": [
-      "billing/ui",
-      "scheduling/data",
-      "scheduling/ui"
-    ],
-    "union": [
-      "billing/ui",
-      "scheduling/data",
-      "scheduling/ui"
-    ],
-    "distribution": [
-      [
-        [
-          "billing/ui",
-          "scheduling/data",
-          "scheduling/ui"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["billing/ui", "scheduling/data", "scheduling/ui"],
+    "union": ["billing/ui", "scheduling/data", "scheduling/ui"],
+    "distribution": [[["billing/ui", "scheduling/data", "scheduling/ui"], 5]]
   },
   "R04": {
     "rid": "R04",
@@ -84,20 +39,9 @@
     "full_agree": true,
     "unc": 15,
     "q": 15,
-    "intersection": [
-      "scheduling/ui"
-    ],
-    "union": [
-      "scheduling/ui"
-    ],
-    "distribution": [
-      [
-        [
-          "scheduling/ui"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["scheduling/ui"],
+    "union": ["scheduling/ui"],
+    "distribution": [[["scheduling/ui"], 5]]
   },
   "R05": {
     "rid": "R05",
@@ -106,20 +50,9 @@
     "full_agree": true,
     "unc": 14,
     "q": 19,
-    "intersection": [
-      "billing/ui"
-    ],
-    "union": [
-      "billing/ui"
-    ],
-    "distribution": [
-      [
-        [
-          "billing/ui"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["billing/ui"],
+    "union": ["billing/ui"],
+    "distribution": [[["billing/ui"], 5]]
   },
   "R06": {
     "rid": "R06",
@@ -128,27 +61,11 @@
     "full_agree": false,
     "unc": 17,
     "q": 20,
-    "intersection": [
-      "scheduling/ui"
-    ],
-    "union": [
-      "scheduling/core",
-      "scheduling/ui"
-    ],
+    "intersection": ["scheduling/ui"],
+    "union": ["scheduling/core", "scheduling/ui"],
     "distribution": [
-      [
-        [
-          "scheduling/ui"
-        ],
-        4
-      ],
-      [
-        [
-          "scheduling/core",
-          "scheduling/ui"
-        ],
-        1
-      ]
+      [["scheduling/ui"], 4],
+      [["scheduling/core", "scheduling/ui"], 1]
     ]
   },
   "R07": {
@@ -158,9 +75,7 @@
     "full_agree": false,
     "unc": 22,
     "q": 29,
-    "intersection": [
-      "app/app"
-    ],
+    "intersection": ["app/app"],
     "union": [
       "app/app",
       "audit/core",
@@ -236,29 +151,9 @@
     "full_agree": true,
     "unc": 20,
     "q": 27,
-    "intersection": [
-      "app/app",
-      "billing/ui",
-      "scheduling/ui",
-      "shared/primitives"
-    ],
-    "union": [
-      "app/app",
-      "billing/ui",
-      "scheduling/ui",
-      "shared/primitives"
-    ],
-    "distribution": [
-      [
-        [
-          "app/app",
-          "billing/ui",
-          "scheduling/ui",
-          "shared/primitives"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["app/app", "billing/ui", "scheduling/ui", "shared/primitives"],
+    "union": ["app/app", "billing/ui", "scheduling/ui", "shared/primitives"],
+    "distribution": [[["app/app", "billing/ui", "scheduling/ui", "shared/primitives"], 5]]
   },
   "R09": {
     "rid": "R09",
@@ -267,10 +162,7 @@
     "full_agree": false,
     "unc": 21,
     "q": 25,
-    "intersection": [
-      "app/app",
-      "billing/ui"
-    ],
+    "intersection": ["app/app", "billing/ui"],
     "union": [
       "app/app",
       "billing/core",
@@ -305,15 +197,7 @@
         ],
         2
       ],
-      [
-        [
-          "app/app",
-          "billing/core",
-          "billing/ui",
-          "shared/primitives"
-        ],
-        1
-      ]
+      [["app/app", "billing/core", "billing/ui", "shared/primitives"], 1]
     ]
   },
   "R10": {
@@ -323,31 +207,11 @@
     "full_agree": false,
     "unc": 21,
     "q": 25,
-    "intersection": [
-      "scheduling/data",
-      "scheduling/ui"
-    ],
-    "union": [
-      "scheduling/core",
-      "scheduling/data",
-      "scheduling/ui"
-    ],
+    "intersection": ["scheduling/data", "scheduling/ui"],
+    "union": ["scheduling/core", "scheduling/data", "scheduling/ui"],
     "distribution": [
-      [
-        [
-          "scheduling/core",
-          "scheduling/data",
-          "scheduling/ui"
-        ],
-        3
-      ],
-      [
-        [
-          "scheduling/data",
-          "scheduling/ui"
-        ],
-        2
-      ]
+      [["scheduling/core", "scheduling/data", "scheduling/ui"], 3],
+      [["scheduling/data", "scheduling/ui"], 2]
     ]
   },
   "R11": {
@@ -407,28 +271,8 @@
     "full_agree": true,
     "unc": 18,
     "q": 21,
-    "intersection": [
-      "billing/core",
-      "billing/ui",
-      "scheduling/core",
-      "scheduling/ui"
-    ],
-    "union": [
-      "billing/core",
-      "billing/ui",
-      "scheduling/core",
-      "scheduling/ui"
-    ],
-    "distribution": [
-      [
-        [
-          "billing/core",
-          "billing/ui",
-          "scheduling/core",
-          "scheduling/ui"
-        ],
-        5
-      ]
-    ]
+    "intersection": ["billing/core", "billing/ui", "scheduling/core", "scheduling/ui"],
+    "union": ["billing/core", "billing/ui", "scheduling/core", "scheduling/ui"],
+    "distribution": [[["billing/core", "billing/ui", "scheduling/core", "scheduling/ui"], 5]]
   }
 }

@@ -2,8 +2,8 @@
 
 # Reading the dependency graph
 
-The boundary checks (`check file`, `check all`, `CI`) are the *gate* — they fail
-the build when a rule is broken. The dependency **graph** is the *lens*: it lets
+The boundary checks (`check file`, `check all`, `CI`) are the _gate_ — they fail
+the build when a rule is broken. The dependency **graph** is the _lens_: it lets
 you see the architecture, understand a file's neighborhood before you change it,
 and spot design smells the rules don't encode (fan-in, fan-out, overall shape).
 
@@ -12,27 +12,34 @@ and rendered to SVG with a wasm graphviz — no system tooling required.
 
 ## Generate one
 
-| You want | Run | Output |
-| --- | --- | --- |
-| The **whole** app (the hero shape) | `node scripts/render-graph.ts` | `docs/architecture-graph.svg` |
-| A graph **focused on the file you're editing** | the **graph** VS Code task, or `node scripts/depcruise-focus.mjs <path>` | opens a focused SVG |
+| You want                                       | Run                                                                      | Output                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
+| The **whole** app (the hero shape)             | `node scripts/render-graph.ts`                                           | `docs/architecture-graph.svg` |
+| A graph **focused on the file you're editing** | the **graph** VS Code task, or `node scripts/depcruise-focus.mjs <path>` | opens a focused SVG           |
 
 The focused graph shows the target file plus its immediate neighbourhood — what it
-imports and what imports it — with `node_modules` excluded so only *your* modules
+imports and what imports it — with `node_modules` excluded so only _your_ modules
 remain.
 
 ## How to read it
 
 - **Nested boxes are folders.** `src → slices → <slice> → core │ data │ ui`, plus
-  the two global boxes, `shared` and `app`. The box nesting *is* the coordinate
+  the two global boxes, `shared` and `app`. The box nesting _is_ the coordinate
   system from [Architecture](architecture.md).
 - **Colour is file type**, nothing more: green = a `.vue` SFC (UI), blue = a `.ts`
-  module. It is *not* a "you are here" marker.
+  module. It is _not_ a "you are here" marker.
 - **Arrows are imports**, pointing from the importer to the thing it imports. The
   whole game is which way they point (see [what to look for](#what-to-look-for)).
 - **A slice you are not inside shows only its `index.ts`.** That lone node is the
   slice's public door — from outside, you should never see another slice's
   `core/`, `data/`, or `ui/`.
+- **A folder with both an entry file and sub-folders shows up twice** in the
+  whole-app graph: a single **door node** labelled `<folder>/<entry>` — e.g.
+  `billing/index.ts`, `scheduling/index.ts`, `app/main.ts` — and the **cluster** of
+  the same name that wraps its internals (`core`/`data`/`ui`). Outside arrows land
+  on the door node (the public surface); the cluster is what lives behind it. Every
+  other box is a whole folder consolidated to one node, so individual files only
+  appear for these entry points and in the focused (`depcruise-focus`) graph.
 
 ## Two worked reads
 
@@ -45,7 +52,7 @@ remain.
 This is the architecture in miniature. The `app` box (the composition root) and
 the `shared` box (`ui/card`, `ui/badge`, `lib/format`) are the two **global
 bands**; `billing` and `scheduling` are the **vertical silos**. The view reaches
-each silo *only* through its `index.ts` and pulls primitives from `shared/` —
+each silo _only_ through its `index.ts` and pulls primitives from `shared/` —
 every arrow points toward stability, and the silos expose nothing but their door.
 This is the one place a cross-slice composition is allowed to live.
 
@@ -71,8 +78,8 @@ for you.
 
 1. **Arrow direction — toward stability.**
    ✅ `ui → data → core`, `slice → shared`, `app → slice index`.
-   🚩 any arrow *out of* `core/` (core is a sink), `data → ui`, or **any arrow
-   pointing *into* `app/`** (app is a leaf, imported by nobody).
+   🚩 any arrow _out of_ `core/` (core is a sink), `data → ui`, or **any arrow
+   pointing _into_ `app/`** (app is a leaf, imported by nobody).
 2. **Cross-slice edges land on `index.ts` only.**
    ✅ an arrow into another slice terminates at its lone `index.ts` node.
    🚩 an arrow crossing into another slice's `core/`, `data/`, or `ui/` — or that
@@ -89,11 +96,11 @@ for you.
 6. **No orphans.**
    🚩 a node floating with no edges — an unreachable / dead module.
 7. **Fan-in / fan-out (a smell, not a rule).**
-   High fan-in on `shared/*` or a `core/types` is *healthy* — stable things get
-   depended on. 🚩 High fan-in on a *volatile* file (large blast radius), or a
+   High fan-in on `shared/*` or a `core/types` is _healthy_ — stable things get
+   depended on. 🚩 High fan-in on a _volatile_ file (large blast radius), or a
    single UI file with sprawling fan-out — it is probably doing too much; split it.
 8. **Door width.** A slice's `index.ts` should expose a tiny surface.
-   🚩 an `index.ts` that points at *another* slice's `index.ts` — that launders a
+   🚩 an `index.ts` that points at _another_ slice's `index.ts` — that launders a
    sideways dependency through your public surface.
 
 ## The checks are the gate
@@ -101,5 +108,5 @@ for you.
 The graph is for humans; the [enforcement](enforcement.md) suite is the gate.
 Rules 1–6 above fail the build via dependency-cruiser, Oxlint, and the Vitest
 structure tests — run them locally with `check file` / `check all` (or `CI`).
-Reach for the graph to *understand* a neighbourhood and to catch the shape-level
+Reach for the graph to _understand_ a neighbourhood and to catch the shape-level
 smells (7–8) that no rule can express.

@@ -44,11 +44,11 @@ describe("billing money rules", () => {
 
   it("sums line subtotals, tax and totals across the invoice", () => {
     const inv = invoice({
-      lines: [line(), line({ id: "l2", quantity: 1, unitPriceMinor: 5_000, taxRateBps: 0 })],
+      lines: [line(), line({ id: "l2", quantity: 1, unitPriceMinor: 5000, taxRateBps: 0 })],
     });
-    expect(invoiceSubtotalMinor(inv)).toBe(37_500 + 5_000);
+    expect(invoiceSubtotalMinor(inv)).toBe(37_500 + 5000);
     expect(invoiceTaxMinor(inv)).toBe(3281 + 0);
-    expect(invoiceTotalMinor(inv)).toBe(40_781 + 5_000);
+    expect(invoiceTotalMinor(inv)).toBe(40_781 + 5000);
   });
 });
 

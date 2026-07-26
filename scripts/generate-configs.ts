@@ -15,6 +15,7 @@ import {
   APP_DIR,
   buildAllowedRules,
   buildForbiddenRules,
+  buildOxlintBaseConfig,
   buildOxlintOverrides,
 } from "../architecture.config.ts";
 
@@ -28,6 +29,7 @@ const depcruise = {
 
 const oxlint = {
   $schema: "./node_modules/oxlint/configuration_schema.json",
+  ...buildOxlintBaseConfig(),
   overrides: buildOxlintOverrides(""),
 };
 
