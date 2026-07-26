@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import type { HTMLAttributes } from "vue";
-import { addMonths, isSameDay, isSameMonth, startOfMonth } from "date-fns";
+import { addMonths, isSameDay, isSameMonth, startOfMonth } from "@shared/lib/date";
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { cn } from "@shared/lib/utils";
 import { formatDateFull, formatMonthYear } from "@shared/lib/format";

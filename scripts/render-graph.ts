@@ -24,12 +24,12 @@ const result = spawnSync(
 );
 
 const raw = result.stdout;
-const start = raw.search(/(strict\s+)?digraph/);
-if (start < 0) {
+const digraphStart = raw.search(/(strict\s+)?digraph/);
+if (digraphStart < 0) {
   console.error("depcruise did not emit a DOT graph.");
   process.exit(1);
 }
-const rawDot = raw.slice(start);
+const rawDot = raw.slice(digraphStart);
 
 /** Source extensions dependency-cruiser resolves (mirrors the .cjs resolver). */
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".vue", ".js", ".mjs", ".cjs"];
@@ -39,10 +39,10 @@ const SOURCE_EXTENSIONS = [".ts", ".tsx", ".mts", ".cts", ".vue", ".js", ".mjs",
  * door) or a top-level `main.*` (the app composition root). Returns null when the
  * folder has no single obvious entry, so the caller keeps the plain folder label.
  */
-function ownEntryFile(pFolderAbs: string): string | null {
+function ownEntryFile(folderPath: string): string | null {
   let sources: string[];
   try {
-    sources = readdirSync(pFolderAbs, { withFileTypes: true })
+    sources = readdirSync(folderPath, { withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
       .filter((name) => SOURCE_EXTENSIONS.some((ext) => name.endsWith(ext)));
@@ -69,12 +69,12 @@ function ownEntryFile(pFolderAbs: string): string | null {
  * to `<folder>/<entry>` — e.g. `billing/index.ts` — so it reads unambiguously as the
  * slice's public door rather than a nameless twin of the surrounding cluster.
  */
-function resolveBarrelCollisions(pDot: string): string {
-  const boxRe = /"([^"]+)" \[label=<[^>]*> tooltip="[^"]*" URL="[^"]*" shape="box3d"\]/g;
+function resolveBarrelCollisions(dotSource: string): string {
+  const box3dNodePattern = /"([^"]+)" \[label=<[^>]*> tooltip="[^"]*" URL="[^"]*" shape="box3d"\]/g;
   const box3dIds = new Set<string>();
-  for (const match of pDot.matchAll(boxRe)) box3dIds.add(match[1]);
+  for (const match of dotSource.matchAll(box3dNodePattern)) box3dIds.add(match[1]);
 
-  let out = pDot;
+  let out = dotSource;
   for (const id of box3dIds) {
     const anchor = `"${id}" [width="0.05" shape="point" style="invis"] `;
     if (!out.includes(anchor)) continue; // pure leaf folder — no cluster twin, leave it
@@ -83,9 +83,9 @@ function resolveBarrelCollisions(pDot: string): string {
 
     const entry = ownEntryFile(join(appDir, id));
     if (entry) {
-      const base = id.slice(id.lastIndexOf("/") + 1);
+      const folderName = id.slice(id.lastIndexOf("/") + 1);
       const idPattern = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      out = out.replace(new RegExp(`("${idPattern}" \\[label=)<[^>]*>`), `$1<${base}/${entry}>`);
+      out = out.replace(new RegExp(`("${idPattern}" \\[label=)<[^>]*>`), `$1<${folderName}/${entry}>`);
     }
   }
   return out;

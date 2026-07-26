@@ -152,9 +152,9 @@ flowchart LR
     sliceA[slice A ui/data] -->|via @slices/B| sliceBIndex[slice B index.ts]
 ```
 
-- **`core` is the strictest.** It may import only the npm allow-list (`zod`,
-  `date-fns`, `decimal.js`) and `shared/lib` — and only the _pure_ parts of it
-  (`format`, `result`), never `useDebounce` (that one pulls in Vue).
+- **`core` is the strictest.** It may import only the npm allow-list (`zod`) and
+  `shared/lib` — and only the _pure_ parts of it (`date`, `decimal`, `format`,
+  `result`), never `useDebounce` (that one pulls in Vue).
 - **Cross-slice is always via `@slices/<slice>`.** A deep import like
   `@slices/scheduling/core/rules` **does not resolve** — that's on purpose. Billing's
   composable importing `@slices/scheduling` is the canonical, blessed pattern (see

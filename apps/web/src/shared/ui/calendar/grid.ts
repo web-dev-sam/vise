@@ -3,7 +3,6 @@
  * arranged for display. Purely presentational — the padding and the single-letter
  * headers exist to render a rectangular widget, not to describe dates.
  */
-import { eachDayOfInterval, endOfMonth, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
 
 const DAYS_PER_WEEK = 7;
 const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-US", { weekday: "narrow" });
@@ -14,19 +13,25 @@ const WEEKDAY_FORMAT = new Intl.DateTimeFormat("en-US", { weekday: "narrow" });
  * The row count varies from 4 to 6 depending on how the month falls.
  */
 export function monthGrid(month: Date): Date[][] {
-  const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(month)),
-    end: endOfWeek(endOfMonth(month)),
-  });
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const leading = new Date(year, monthIndex, 1).getDay(); // Sunday-based offset of the 1st
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const weekCount = Math.ceil((leading + daysInMonth) / DAYS_PER_WEEK);
   const weeks: Date[][] = [];
-  for (let i = 0; i < days.length; i += DAYS_PER_WEEK) {
-    weeks.push(days.slice(i, i + DAYS_PER_WEEK));
+  for (let week = 0; week < weekCount; week += 1) {
+    const row: Date[] = [];
+    for (let day = 0; day < DAYS_PER_WEEK; day += 1) {
+      // The Date constructor normalises out-of-range days, rolling cleanly into
+      // the neighbouring months and across DST without manual millisecond math.
+      row.push(new Date(year, monthIndex, 1 - leading + week * DAYS_PER_WEEK + day));
+    }
+    weeks.push(row);
   }
   return weeks;
 }
 
-/** Single-letter column headers, Sunday-first. The reference week is arbitrary. */
-export const weekdayInitials: readonly string[] = eachDayOfInterval({
-  start: startOfWeek(new Date(2021, 0, 3)),
-  end: endOfWeek(new Date(2021, 0, 3)),
-}).map((day) => WEEKDAY_FORMAT.format(day));
+/** Single-letter column headers, Sunday-first. 1970-01-04 was a Sunday. */
+export const weekdayInitials: readonly string[] = Array.from({ length: DAYS_PER_WEEK }, (_, i) =>
+  WEEKDAY_FORMAT.format(new Date(1970, 0, 4 + i)),
+);

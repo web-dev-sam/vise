@@ -1,4 +1,4 @@
-import { differenceInHours, differenceInMinutes } from "date-fns";
+import { differenceInHours, differenceInMinutes } from "@shared/lib/date";
 import { err, ok } from "@shared/lib/result";
 import type { Result } from "@shared/lib/result";
 import type { Appointment } from "./types";

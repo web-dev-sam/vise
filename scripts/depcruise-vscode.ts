@@ -32,13 +32,13 @@ const appDir = join(repoRoot, "apps", "web");
 const arg = process.argv.at(2)?.trim();
 let target = "src";
 if (arg) {
-  const abs = isAbsolute(arg) ? arg : resolve(process.cwd(), arg);
-  const rel = relative(appDir, abs);
-  if (rel.startsWith("..") || !rel.startsWith("src")) {
+  const absolutePath = isAbsolute(arg) ? arg : resolve(process.cwd(), arg);
+  const relativePath = relative(appDir, absolutePath);
+  if (relativePath.startsWith("..") || !relativePath.startsWith("src")) {
     console.log(`skipped: ${arg} is not under apps/web/src`);
     process.exit(0);
   }
-  target = rel;
+  target = relativePath;
 }
 
 const { status, stdout, error } = spawnSync(
@@ -53,29 +53,29 @@ if (error) {
 }
 
 const raw = stdout;
-const brace = raw.indexOf("{");
+const jsonStart = raw.indexOf("{");
 let report: DepcruiseReport;
 try {
-  report = JSON.parse(raw.slice(brace));
+  report = JSON.parse(raw.slice(jsonStart));
 } catch {
   const trimmed = raw.trim();
   console.error(trimmed === "" ? "dependency-cruiser produced no parseable output" : trimmed);
   process.exit(status && status !== 0 ? status : 1);
 }
 
-function severityLabel(s: string | undefined): string {
-  if (s === "warn") return "warning";
-  if (s === "info") return "info";
+function severityLabel(severity: string | undefined): string {
+  if (severity === "warn") return "warning";
+  if (severity === "info") return "info";
   return "error";
 }
 const violations = report.summary?.violations ?? [];
-for (const v of violations) {
-  const from = v.from;
-  const abs = join(appDir, from);
-  const rule = v.rule?.name ?? "violation";
-  const sev = severityLabel(v.rule?.severity);
-  const to = v.to && v.to !== from ? ` → ${v.to}` : "";
-  console.log(`${abs}:1:1: ${sev} ${rule}: ${from}${to}`);
+for (const violation of violations) {
+  const from = violation.from;
+  const absolutePath = join(appDir, from);
+  const rule = violation.rule?.name ?? "violation";
+  const severity = severityLabel(violation.rule?.severity);
+  const to = violation.to && violation.to !== from ? ` → ${violation.to}` : "";
+  console.log(`${absolutePath}:1:1: ${severity} ${rule}: ${from}${to}`);
 }
 
 const errors = report.summary?.error ?? 0;

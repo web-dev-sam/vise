@@ -260,43 +260,43 @@ const cases: readonly EnforcementCase[] = [
 
 function plant(files: readonly PlantedFile[]): void {
   for (const file of files) {
-    const full = join(srcDir, file.path);
-    mkdirSync(dirname(full), { recursive: true });
-    writeFileSync(full, file.content);
+    const fullPath = join(srcDir, file.path);
+    mkdirSync(dirname(fullPath), { recursive: true });
+    writeFileSync(fullPath, file.content);
   }
 }
 
-function cleanup(kase: EnforcementCase): void {
-  for (const file of kase.files) rmSync(join(srcDir, file.path), { force: true });
-  for (const dir of kase.cleanupDirs ?? [])
+function cleanup(scenario: EnforcementCase): void {
+  for (const file of scenario.files) rmSync(join(srcDir, file.path), { force: true });
+  for (const dir of scenario.cleanupDirs ?? [])
     rmSync(join(srcDir, dir), { recursive: true, force: true });
 }
 
 let failures = 0;
 console.log(`Verifying ${cases.length} enforcement rules bite…\n`);
 
-for (const kase of cases) {
+for (const scenario of cases) {
   let result: CheckResult = { code: 0, output: "" };
   try {
-    plant(kase.files);
-    result = checkers[kase.checker]();
+    plant(scenario.files);
+    result = checkers[scenario.checker]();
   } finally {
-    cleanup(kase);
+    cleanup(scenario);
   }
 
-  const bit = result.code !== 0 && kase.expect.test(result.output);
-  if (bit) {
-    console.log(`  ✓ ${kase.rule}  [${kase.checker}]`);
+  const didBite = result.code !== 0 && scenario.expect.test(result.output);
+  if (didBite) {
+    console.log(`  ✓ ${scenario.rule}  [${scenario.checker}]`);
   } else {
     failures += 1;
     console.error(
-      `  ✗ ${kase.rule}  [${kase.checker}] — expected a non-zero exit naming ${kase.expect}`,
+      `  ✗ ${scenario.rule}  [${scenario.checker}] — expected a non-zero exit naming ${scenario.expect}`,
     );
     console.error(
       `      exit=${result.code}; output tail:\n${result.output
         .split("\n")
         .slice(-8)
-        .map((l) => `      | ${l}`)
+        .map((line) => `      | ${line}`)
         .join("\n")}`,
     );
   }

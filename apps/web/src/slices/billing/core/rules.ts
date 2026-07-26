@@ -1,5 +1,3 @@
-import Decimal from "decimal.js";
-import { isBefore } from "date-fns";
 import type { Invoice, InvoiceLine, InvoiceSummary } from "./types";
 
 /** Line subtotal = quantity × unit price, in minor units. */
@@ -7,13 +5,13 @@ export function lineSubtotalMinor(line: InvoiceLine): number {
   return line.quantity * line.unitPriceMinor;
 }
 
-/** Per-line tax, half-up rounded to whole minor units. Decimal, never float. */
+/** Per-line tax, half-up rounded to whole minor units. Integer math, never float. */
 export function lineTaxMinor(line: InvoiceLine): number {
-  return new Decimal(lineSubtotalMinor(line))
-    .mul(line.taxRateBps)
-    .div(10_000)
-    .toDecimalPlaces(0, Decimal.ROUND_HALF_UP)
-    .toNumber();
+  // subtotal × rate in basis points, so the exact value is scaled by 10_000.
+  const scaledTax = lineSubtotalMinor(line) * line.taxRateBps;
+  const remainder = scaledTax % 10_000;
+  const whole = (scaledTax - remainder) / 10_000;
+  return remainder * 2 >= 10_000 ? whole + 1 : whole;
 }
 
 export function lineTotalMinor(line: InvoiceLine): number {
@@ -37,7 +35,7 @@ export function invoiceTotalMinor(invoice: Invoice): number {
  * `today` is passed IN so this stays pure and testable — never read a clock here.
  */
 export function isOverdue(invoice: Invoice, today: Date): boolean {
-  return invoice.status === "issued" && isBefore(invoice.dueDate, today);
+  return invoice.status === "issued" && invoice.dueDate.getTime() < today.getTime();
 }
 
 /** Project an Invoice down to its list/overview read model. */

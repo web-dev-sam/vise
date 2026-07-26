@@ -1,4 +1,4 @@
-import Decimal from "decimal.js";
+import { formatScaled, parseScaled } from "@shared/lib/decimal";
 import type { Invoice, InvoiceLine, InvoiceStatus } from "../core/types";
 import type { InvoiceDto, InvoiceLineDto } from "./dto";
 
@@ -10,20 +10,14 @@ const STATUS_BY_CODE: Record<number, InvoiceStatus | undefined> = {
 };
 const CODE_BY_STATUS: Record<InvoiceStatus, number> = { draft: 0, issued: 1, paid: 2, void: 3 };
 
-// Money crosses the boundary as a decimal string; parse it with Decimal so we
-// never introduce float error on the way to integer minor units.
-const dollarsToMinor = (value: string): number => new Decimal(value).mul(100).toNumber();
-const minorToDollars = (minor: number): string => new Decimal(minor).div(100).toFixed(2);
-const percentToBps = (value: string): number => new Decimal(value).mul(100).toNumber();
-const bpsToPercent = (bps: number): string => new Decimal(bps).div(100).toFixed(2);
-
 export function toInvoiceLine(dto: InvoiceLineDto): InvoiceLine {
   return {
     id: dto.id,
     description: dto.description,
     quantity: dto.quantity,
-    unitPriceMinor: dollarsToMinor(dto.unit_price),
-    taxRateBps: percentToBps(dto.tax_rate),
+    // Dollars → minor units, percent → basis points: both scale by 100 (2 dp).
+    unitPriceMinor: parseScaled(dto.unit_price, 2),
+    taxRateBps: parseScaled(dto.tax_rate, 2),
   };
 }
 
@@ -32,8 +26,8 @@ export function toInvoiceLineDto(line: InvoiceLine): InvoiceLineDto {
     id: line.id,
     description: line.description,
     quantity: line.quantity,
-    unit_price: minorToDollars(line.unitPriceMinor),
-    tax_rate: bpsToPercent(line.taxRateBps),
+    unit_price: formatScaled(line.unitPriceMinor, 2),
+    tax_rate: formatScaled(line.taxRateBps, 2),
   };
 }
 

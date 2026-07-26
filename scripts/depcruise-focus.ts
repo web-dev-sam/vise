@@ -18,15 +18,15 @@ if (!arg) {
   console.error("graph: no file given — open a file under apps/web/src and run the task again.");
   process.exit(1);
 }
-const abs = isAbsolute(arg) ? arg : resolve(process.cwd(), arg);
-const rel = relative(appDir, abs);
-if (rel.startsWith("..") || !rel.startsWith("src")) {
+const absolutePath = isAbsolute(arg) ? arg : resolve(process.cwd(), arg);
+const relativePath = relative(appDir, absolutePath);
+if (relativePath.startsWith("..") || !relativePath.startsWith("src")) {
   console.error(`graph: ${arg} is not under apps/web/src`);
   process.exit(1);
 }
 
 // Focus is a regex matched against module paths; escape the file path literally.
-const focus = rel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const focus = relativePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const { status, stdout } = spawnSync(
   "vp",
@@ -47,20 +47,20 @@ const { status, stdout } = spawnSync(
 );
 
 const raw = stdout;
-const start = raw.search(/(strict\s+)?digraph/);
-if (start < 0) {
+const digraphStart = raw.search(/(strict\s+)?digraph/);
+if (digraphStart < 0) {
   console.error("graph: dependency-cruiser did not emit a DOT graph.");
   process.exit(status && status !== 0 ? status : 1);
 }
 
 const viz = await instance();
-const svg = viz.renderString(raw.slice(start), { format: "svg" });
+const svg = viz.renderString(raw.slice(digraphStart), { format: "svg" });
 
-const slug = rel.replace(/[\\/]/g, "-").replace(/\.[^.]+$/, "");
+const slug = relativePath.replace(/[\\/]/g, "-").replace(/\.[^.]+$/, "");
 const outFile = join(tmpdir(), `vise-focus-${slug}.svg`);
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, svg);
-console.log(`graph: focused on ${rel}`);
+console.log(`graph: focused on ${relativePath}`);
 console.log(`graph: wrote ${outFile}`);
 
 // Best-effort open in the default viewer (renders the SVG); never fatal.

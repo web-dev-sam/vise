@@ -36,14 +36,19 @@
     },
     {
       "name": "core-is-framework-free",
-      "comment": "core/ may only use the npm allowlist (zod, date-fns, decimal.js).",
+      "comment": "core/ may only use the npm allowlist (zod).",
       "severity": "error",
       "from": {
         "path": "^src/slices/[^/]+/core/"
       },
       "to": {
-        "dependencyTypes": ["npm", "npm-dev", "npm-peer", "npm-optional"],
-        "pathNot": "node_modules/(zod|date-fns|decimal\\.js)/"
+        "dependencyTypes": [
+          "npm",
+          "npm-dev",
+          "npm-peer",
+          "npm-optional"
+        ],
+        "pathNot": "node_modules/(zod)/"
       }
     },
     {
@@ -133,7 +138,14 @@
       "comment": "external packages",
       "from": {},
       "to": {
-        "dependencyTypes": ["npm", "npm-dev", "npm-peer", "npm-optional", "core", "type-only"]
+        "dependencyTypes": [
+          "npm",
+          "npm-dev",
+          "npm-peer",
+          "npm-optional",
+          "core",
+          "type-only"
+        ]
       }
     },
     {

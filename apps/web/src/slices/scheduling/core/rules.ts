@@ -1,4 +1,4 @@
-import { differenceInMinutes } from "date-fns";
+import { differenceInMinutes } from "@shared/lib/date";
 import type { Appointment, AppointmentConflict, AppointmentSummary } from "./types";
 
 export function durationMinutes(appointment: Appointment): number {

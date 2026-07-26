@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isSameDay } from "date-fns";
+import { isSameDay } from "@shared/lib/date";
 import { httpTransport } from "@shared/http/transport";
 import { summarizeAppointment } from "../core/rules";
 import type { Appointment, AppointmentSummary } from "../core/types";

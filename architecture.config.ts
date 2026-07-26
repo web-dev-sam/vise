@@ -43,7 +43,7 @@ export const slices = ["billing", "scheduling"] as const;
  * The ONLY npm packages `core/` may import. Everything else (framework, IO) is
  * a reason to move the code down a layer. Enforced by dependency-cruiser.
  */
-export const coreNpmAllowlist = ["zod", "date-fns", "decimal.js"] as const;
+export const coreNpmAllowlist = ["zod"] as const;
 
 /** Directory names that mean "nobody knew where this goes". */
 export const bannedDirectoryNames = ["utils", "helpers", "misc", "common", "stores"] as const;
@@ -99,7 +99,7 @@ const FRAMEWORK_PATTERNS = ["@vue/*", "**/*.vue", "*.vue"];
  *   vite.config, or "" for a `.oxlintrc.json` that lives inside the app.
  */
 export function buildOxlintOverrides(base = ""): OxlintOverride[] {
-  const p = (glob: string) => `${base}${glob}`;
+  const withBase = (glob: string) => `${base}${glob}`;
   const climbOut = {
     group: ["**/slices/*/core/**", "**/slices/*/data/**", "**/slices/*/ui/**"],
     message: MSG.climbOutOfSlice,
@@ -110,14 +110,14 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
   return [
     // Repo-wide: never reach into a slice's internals via a relative path.
     {
-      files: [p("src/**/*")],
+      files: [withBase("src/**/*")],
       rules: {
         "no-restricted-imports": ["error", { patterns: [climbOut] }],
       },
     },
     // shared/: zero domain knowledge, never imports a slice or the app.
     {
-      files: [p("src/shared/**/*")],
+      files: [withBase("src/shared/**/*")],
       rules: {
         "no-restricted-imports": [
           "error",
@@ -135,7 +135,7 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
     // core/: framework-free AND may not reach down or sideways. Most specific,
     // so it comes last and wins for files under slices/*/core.
     {
-      files: [p("src/slices/*/core/**/*")],
+      files: [withBase("src/slices/*/core/**/*")],
       rules: {
         "no-restricted-imports": [
           "error",
@@ -383,7 +383,7 @@ export interface DepcruiseRule {
 }
 
 export function buildForbiddenRules(): DepcruiseRule[] {
-  const allowlist = coreNpmAllowlist.map((p) => p.replace(".", "\\.")).join("|");
+  const allowlist = coreNpmAllowlist.map((pkg) => pkg.replace(".", "\\.")).join("|");
   return [
     {
       name: "slice-isolation",
@@ -408,7 +408,7 @@ export function buildForbiddenRules(): DepcruiseRule[] {
     },
     {
       name: "core-is-framework-free",
-      comment: "core/ may only use the npm allowlist (zod, date-fns, decimal.js).",
+      comment: "core/ may only use the npm allowlist (zod).",
       severity: "error",
       from: { path: "^src/slices/[^/]+/core/" },
       to: {

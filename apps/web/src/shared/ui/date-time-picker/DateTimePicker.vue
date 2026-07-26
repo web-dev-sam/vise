@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { format } from "date-fns";
 import { CalendarClock } from "lucide-vue-next";
 import { formatDateTime } from "@shared/lib/format";
 import { withDate, withTime } from "@shared/lib/date";
@@ -14,7 +13,8 @@ const props = withDefaults(defineProps<{ id?: string; minuteStep?: number }>(), 
 
 // The calendar edits the date; a native time field edits the time. Both write
 // back into a single source-of-truth Date so the two halves never drift apart.
-const timeValue = computed(() => format(model.value, "HH:mm"));
+const pad = (value: number): string => String(value).padStart(2, "0");
+const timeValue = computed(() => `${pad(model.value.getHours())}:${pad(model.value.getMinutes())}`);
 
 function onDateChange(value: Date): void {
   model.value = withDate(model.value, value);

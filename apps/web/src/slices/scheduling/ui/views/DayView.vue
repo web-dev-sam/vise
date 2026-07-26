@@ -14,10 +14,10 @@ import type { Appointment } from "../../core/types";
 // the 24h reschedule cutoff) so the view lands on the seeded cluster and every
 // appointment on it stays reschedulable — no fixed calendar date to go stale.
 function demoDay(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 2);
-  return d;
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  day.setDate(day.getDate() + 2);
+  return day;
 }
 const day = ref(demoDay());
 const { appointments, conflictIds, loading, refresh } = useDaySchedule(day);
