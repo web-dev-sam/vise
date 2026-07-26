@@ -11,7 +11,7 @@ import { APP_DIR, buildOxlintOverrides } from "./architecture.config";
 // it ("not type-aware").
 export default defineConfig({
   staged: {
-    "*": "vp lint --fix",
+    "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}": "vp lint --fix",
   },
   lint: {
     options: { typeAware: false, typeCheck: false },

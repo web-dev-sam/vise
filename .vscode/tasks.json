@@ -2,6 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "dev",
+      "type": "shell",
+      "command": "vp dev apps/web",
+      "icon": {
+        "id": "play",
+        "color": "terminal.ansiGreen"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "check file",
       "type": "shell",
       "command": "node scripts/depcruise-vscode.mjs \"${file}\"",

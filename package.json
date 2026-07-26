@@ -19,6 +19,7 @@
   "devDependencies": {
     "@viz-js/viz": "catalog:",
     "plop": "catalog:",
+    "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
