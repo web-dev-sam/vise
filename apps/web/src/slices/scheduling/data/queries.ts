@@ -7,7 +7,7 @@ import { appointmentDtoSchema } from "./dto";
 import { toAppointment } from "./mappers";
 
 export async function fetchAppointments(): Promise<Appointment[]> {
-  const raw = await httpTransport.get<unknown>("/api/appointments");
+  const raw = await httpTransport.get("/api/appointments");
   return z.array(appointmentDtoSchema).parse(raw).map(toAppointment);
 }
 

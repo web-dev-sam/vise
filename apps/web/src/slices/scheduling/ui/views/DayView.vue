@@ -10,8 +10,16 @@ import AppointmentCard from "../components/AppointmentCard.vue";
 import RescheduleForm from "../components/RescheduleForm.vue";
 import type { Appointment } from "../../core/types";
 
-// A fixed demo day whose seed contains a room double-booking.
-const day = ref(new Date("2026-07-25T00:00:00Z"));
+// The demo day mirrors the mock seed's offset (a couple days out, kept beyond
+// the 24h reschedule cutoff) so the view lands on the seeded cluster and every
+// appointment on it stays reschedulable — no fixed calendar date to go stale.
+function demoDay(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 2);
+  return d;
+}
+const day = ref(demoDay());
 const { appointments, conflictIds, loading, refresh } = useDaySchedule(day);
 const selectedId = ref<string | null>(null);
 
@@ -46,31 +54,31 @@ function onRescheduled(): void {
         <CalendarX class="size-8 opacity-60" />
         <p class="text-sm">No appointments scheduled for this day.</p>
       </div>
-      <div v-else class="space-y-4">
-        <div v-for="appointment in appointments" :key="appointment.id" class="space-y-2">
-          <div class="flex items-start gap-3">
-            <div class="flex-1">
-              <AppointmentCard
-                :appointment="appointment"
-                :conflicting="conflictIds.has(appointment.id)"
-              />
-            </div>
+      <div v-else class="space-y-3">
+        <AppointmentCard
+          v-for="appointment in appointments"
+          :key="appointment.id"
+          :appointment="appointment"
+          :conflicting="conflictIds.has(appointment.id)"
+          :active="selectedId === appointment.id"
+        >
+          <template #action>
             <Button
-              v-if="appointment.status === 'scheduled'"
-              :variant="selectedId === appointment.id ? 'secondary' : 'outline'"
+              v-if="appointment.status === 'scheduled' && selectedId !== appointment.id"
+              variant="outline"
               size="sm"
               @click="toggle(appointment)"
             >
               Reschedule
             </Button>
-          </div>
+          </template>
           <RescheduleForm
             v-if="selectedId === appointment.id"
             :appointment="appointment"
-            class="rounded-xl border border-border/70 bg-muted/30 p-4"
             @rescheduled="onRescheduled"
+            @cancel="selectedId = null"
           />
-        </div>
+        </AppointmentCard>
       </div>
     </template>
   </div>

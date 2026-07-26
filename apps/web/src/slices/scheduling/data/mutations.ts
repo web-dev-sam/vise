@@ -8,7 +8,7 @@ export async function rescheduleAppointment(
   start: Date,
   end: Date,
 ): Promise<Appointment> {
-  const raw = await httpTransport.patch<unknown>(`/api/appointments/${id}`, {
+  const raw = await httpTransport.patch(`/api/appointments/${id}`, {
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
   });

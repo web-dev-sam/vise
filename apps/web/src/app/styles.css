@@ -129,7 +129,15 @@
   }
 
   html {
+    /* Drive native controls (date/time pickers, scrollbars) to match the
+       theme, so the datetime-local calendar-picker icon and popup stay legible
+       in dark mode instead of rendering near-black on the dark input. */
+    color-scheme: light;
     scroll-behavior: smooth;
+  }
+
+  .dark {
+    color-scheme: dark;
   }
 
   body {

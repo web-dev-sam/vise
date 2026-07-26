@@ -11,7 +11,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/overview",
     name: "client-overview",
-    component: () => import("../views/ClientOverviewView.vue"),
+    component: async () => import("../views/ClientOverviewView.vue"),
   },
   ...billingRoutes,
   ...schedulingRoutes,

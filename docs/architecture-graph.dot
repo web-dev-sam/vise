@@ -32,14 +32,25 @@ strict digraph "dependency-cruiser output"{
     "src/shared/ui/badge" -> "src/shared/lib"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/button" [label=<button> tooltip="button" URL="src/shared/ui/button" shape="box3d"] } } }
     "src/shared/ui/button" -> "src/shared/lib"
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/calendar" [label=<calendar> tooltip="calendar" URL="src/shared/ui/calendar" shape="box3d"] } } }
+    "src/shared/ui/calendar" -> "src/shared/lib"
+    "src/shared/ui/calendar" -> "src/shared/ui/button"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/card" [label=<card> tooltip="card" URL="src/shared/ui/card" shape="box3d"] } } }
     "src/shared/ui/card" -> "src/shared/lib"
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/date-time-picker" [label=<date-time-picker> tooltip="date-time-picker" URL="src/shared/ui/date-time-picker" shape="box3d"] } } }
+    "src/shared/ui/date-time-picker" -> "src/shared/lib"
+    "src/shared/ui/date-time-picker" -> "src/shared/ui/button"
+    "src/shared/ui/date-time-picker" -> "src/shared/ui/calendar"
+    "src/shared/ui/date-time-picker" -> "src/shared/ui/input"
+    "src/shared/ui/date-time-picker" -> "src/shared/ui/popover"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/input" [label=<input> tooltip="input" URL="src/shared/ui/input" shape="box3d"] } } }
     "src/shared/ui/input" -> "src/shared/lib"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/label" [label=<label> tooltip="label" URL="src/shared/ui/label" shape="box3d"] } } }
     "src/shared/ui/label" -> "src/shared/lib"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/page-header" [label=<page-header> tooltip="page-header" URL="src/shared/ui/page-header" shape="box3d"] } } }
     "src/shared/ui/page-header" -> "src/shared/lib"
+    subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/popover" [label=<popover> tooltip="popover" URL="src/shared/ui/popover" shape="box3d"] } } }
+    "src/shared/ui/popover" -> "src/shared/lib"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared" {label="shared" "src/shared" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/shared/ui" {label="ui" "src/shared/ui" [width="0.05" shape="point" style="invis"] "src/shared/ui/table" [label=<table> tooltip="table" URL="src/shared/ui/table" shape="box3d"] } } }
     "src/shared/ui/table" -> "src/shared/lib"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/slices" {label="slices" "src/slices" [width="0.05" shape="point" style="invis"] "src/slices/billing" [label=<billing/index.ts> tooltip="billing" URL="src/slices/billing" shape="box3d"] } }
@@ -86,7 +97,7 @@ strict digraph "dependency-cruiser output"{
     "src/slices/scheduling/ui/components" -> "src/slices/scheduling/ui/composables"
     "src/slices/scheduling/ui/components" -> "src/shared/ui/alert"
     "src/slices/scheduling/ui/components" -> "src/shared/ui/button"
-    "src/slices/scheduling/ui/components" -> "src/shared/ui/input"
+    "src/slices/scheduling/ui/components" -> "src/shared/ui/date-time-picker"
     "src/slices/scheduling/ui/components" -> "src/shared/ui/label"
     subgraph "cluster_src" {label="src" "src" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/slices" {label="slices" "src/slices" [width="0.05" shape="point" style="invis"] subgraph "cluster_src/slices/scheduling" {label="scheduling" subgraph "cluster_src/slices/scheduling/ui" {label="ui" "src/slices/scheduling/ui" [width="0.05" shape="point" style="invis"] "src/slices/scheduling/ui/composables" [label=<composables> tooltip="composables" URL="src/slices/scheduling/ui/composables" shape="box3d"] } } } }
     "src/slices/scheduling/ui/composables" -> "src/slices/scheduling/core"

@@ -17,13 +17,13 @@ export class HttpError extends Error {
 }
 
 export interface HttpTransport {
-  get<T>(path: string): Promise<T>;
-  post<T>(path: string, body: unknown): Promise<T>;
-  patch<T>(path: string, body: unknown): Promise<T>;
+  get(path: string): Promise<unknown>;
+  post(path: string, body: unknown): Promise<unknown>;
+  patch(path: string, body: unknown): Promise<unknown>;
 }
 
 export function createHttpTransport(baseUrl = ""): HttpTransport {
-  async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async function request(method: string, path: string, body?: unknown): Promise<unknown> {
     const url = `${baseUrl}${path}`;
     const response = await fetch(url, {
       method,
@@ -33,13 +33,27 @@ export function createHttpTransport(baseUrl = ""): HttpTransport {
     if (!response.ok) {
       throw new HttpError(response.status, url, `${method} ${url} failed with ${response.status}`);
     }
-    return (await response.json()) as T;
+    // A 2xx status is not proof of JSON. When the mock API isn't intercepting —
+    // e.g. the MSW service worker was idle-terminated by the browser — the
+    // request falls through to the dev server, which answers the SPA fallback
+    // `index.html`: a 200 whose body is HTML. Parsing that yields the opaque
+    // "Unexpected token '<'" crash, so fail with a legible error instead.
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      throw new HttpError(
+        response.status,
+        url,
+        `${method} ${url} returned ${contentType || "an unknown content type"} instead of JSON — is the mock API running?`,
+      );
+    }
+    const data: unknown = await response.json();
+    return data;
   }
 
   return {
-    get: (path) => request("GET", path),
-    post: (path, body) => request("POST", path, body),
-    patch: (path, body) => request("PATCH", path, body),
+    get: async (path) => request("GET", path),
+    post: async (path, body) => request("POST", path, body),
+    patch: async (path, body) => request("PATCH", path, body),
   };
 }
 

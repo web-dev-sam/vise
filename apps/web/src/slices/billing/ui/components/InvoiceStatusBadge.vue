@@ -8,8 +8,8 @@ const props = defineProps<{ status: InvoiceStatus; overdue?: boolean }>();
 
 // Static, string-keyed lookup → Record (not a Map).
 const VARIANT_BY_STATUS: Record<InvoiceStatus, NonNullable<BadgeVariants["variant"]>> = {
-  draft: "secondary",
-  issued: "default",
+  draft: "muted",
+  issued: "info",
   paid: "success",
   void: "outline",
 };

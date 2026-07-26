@@ -5,29 +5,22 @@ import { rescheduleAppointment } from "../../data/mutations";
 import type { Appointment } from "../../core/types";
 
 export interface RescheduleState {
-  readonly start: Ref<string>;
-  readonly end: Ref<string>;
+  readonly start: Ref<Date>;
+  readonly end: Ref<Date>;
   readonly error: Ref<string | null>;
   readonly submitting: Ref<boolean>;
   readonly submit: () => Promise<Appointment | null>;
 }
 
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-function toLocalInput(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 /**
  * View state for the reschedule flow. `now` is injected (the UI boundary is
  * where the clock is read) and every attempt runs the pure core rule, so the
- * violation message the user sees comes straight from the domain.
+ * violation message the user sees comes straight from the domain. The two dates
+ * are the picker's source of truth; the core policy validates the proposed slot.
  */
 export function useReschedule(appointment: Ref<Appointment>, now: () => Date): RescheduleState {
-  const start = ref(toLocalInput(appointment.value.start));
-  const end = ref(toLocalInput(appointment.value.end));
+  const start = ref(appointment.value.start);
+  const end = ref(appointment.value.end);
   const error = ref<string | null>(null);
   const submitting = ref(false);
 
@@ -35,7 +28,7 @@ export function useReschedule(appointment: Ref<Appointment>, now: () => Date): R
     error.value = null;
     const result = validateReschedule(
       appointment.value,
-      { start: new Date(start.value), end: new Date(end.value) },
+      { start: start.value, end: end.value },
       now(),
     );
     if (!result.ok) {

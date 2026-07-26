@@ -32,6 +32,6 @@ describe("billing dto <-> core mapping", () => {
   });
 
   it("rejects an unknown status code rather than silently mismapping", () => {
-    expect(() => toInvoice({ ...dto, status: 9 as InvoiceDto["status"] })).toThrow(/status code/);
+    expect(() => toInvoice({ ...dto, status: 9 })).toThrow(/status code/);
   });
 });

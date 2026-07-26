@@ -5,11 +5,11 @@ export const billingRoutes: RouteRecordRaw[] = [
   {
     path: "/invoices",
     name: "invoice-list",
-    component: () => import("./ui/views/InvoiceListView.vue"),
+    component: async () => import("./ui/views/InvoiceListView.vue"),
   },
   {
     path: "/invoices/:id",
     name: "invoice-detail",
-    component: () => import("./ui/views/InvoiceDetailView.vue"),
+    component: async () => import("./ui/views/InvoiceDetailView.vue"),
   },
 ];

@@ -2,7 +2,7 @@ import Decimal from "decimal.js";
 import type { Invoice, InvoiceLine, InvoiceStatus } from "../core/types";
 import type { InvoiceDto, InvoiceLineDto } from "./dto";
 
-const STATUS_BY_CODE: Record<number, InvoiceStatus> = {
+const STATUS_BY_CODE: Record<number, InvoiceStatus | undefined> = {
   0: "draft",
   1: "issued",
   2: "paid",

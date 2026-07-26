@@ -49,7 +49,7 @@ function serverShapeMembers(source: string): string[] {
     }
     if (depth > 0) continue;
     inType = false;
-    for (let m = member.exec(buf); m; m = member.exec(buf)) out.push(m[1] as string);
+    for (let m = member.exec(buf); m; m = member.exec(buf)) out.push(m[1]);
     buf = "";
   }
   return out;
@@ -96,8 +96,9 @@ describe("no junk-drawer directories", () => {
   it("no directory is named utils, helpers, misc, common, or stores", () => {
     const offenders = dirs
       .map((d) => d.split("/").at(-1))
-      .filter((name): name is string =>
-        bannedDirectoryNames.includes(name as (typeof bannedDirectoryNames)[number]),
+      .filter(
+        (name): name is string =>
+          name !== undefined && (bannedDirectoryNames as readonly string[]).includes(name),
       );
     expect(offenders).toEqual([]);
   });
@@ -122,7 +123,7 @@ describe("shared/ is domain-free", () => {
         /export\s+(?:const|function|class|type|interface|enum)\s+([A-Za-z0-9_]+)/g,
       );
       for (const match of exportMatches) {
-        if (nounPattern.test(match[1] ?? "")) offenders.push(`${rel(file)}: ${match[1]}`);
+        if (nounPattern.test(match[1])) offenders.push(`${rel(file)}: ${match[1]}`);
       }
     }
     expect(offenders).toEqual([]);

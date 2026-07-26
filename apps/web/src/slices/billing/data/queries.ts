@@ -8,12 +8,12 @@ import { toInvoice } from "./mappers";
 // Real fetch → real zod validation → real mapper. The data layer is not
 // decorative: DTOs are validated and mapped to core entities before returning.
 export async function fetchInvoices(): Promise<Invoice[]> {
-  const raw = await httpTransport.get<unknown>("/api/invoices");
+  const raw = await httpTransport.get("/api/invoices");
   return z.array(invoiceDtoSchema).parse(raw).map(toInvoice);
 }
 
 export async function fetchInvoiceById(id: string): Promise<Invoice> {
-  const raw = await httpTransport.get<unknown>(`/api/invoices/${id}`);
+  const raw = await httpTransport.get(`/api/invoices/${id}`);
   return toInvoice(invoiceDtoSchema.parse(raw));
 }
 

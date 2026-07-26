@@ -22,7 +22,7 @@ export function validateReschedule(
   appointment: Appointment,
   next: ProposedSlot,
   now: Date,
-): Result<ProposedSlot, string> {
+): Result<ProposedSlot> {
   if (appointment.status !== "scheduled") {
     return err("Only scheduled appointments can be rescheduled.");
   }

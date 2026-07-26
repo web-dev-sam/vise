@@ -1,7 +1,7 @@
 import type { Appointment, AppointmentStatus } from "../core/types";
 import type { AppointmentDto } from "./dto";
 
-const STATUS_BY_CODE: Record<number, AppointmentStatus> = {
+const STATUS_BY_CODE: Record<number, AppointmentStatus | undefined> = {
   0: "scheduled",
   1: "completed",
   2: "cancelled",
