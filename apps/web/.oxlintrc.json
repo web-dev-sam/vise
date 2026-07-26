@@ -221,7 +221,7 @@
       }
     },
     {
-      "files": ["**/*.config.*", "**/plopfile.mjs"],
+      "files": ["**/*.config.*", "**/plopfile.ts"],
       "rules": {
         "import/no-default-export": "off"
       }

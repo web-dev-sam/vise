@@ -11,10 +11,25 @@ import { spawnSync } from "node:child_process";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+interface DepcruiseViolation {
+  readonly from: string;
+  readonly to?: string;
+  readonly rule?: { readonly name?: string; readonly severity?: string };
+}
+
+interface DepcruiseReport {
+  readonly summary?: {
+    readonly violations?: readonly DepcruiseViolation[];
+    readonly error?: number;
+    readonly warn?: number;
+    readonly totalCruised?: number;
+  };
+}
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = join(repoRoot, "apps", "web");
 
-const arg = process.argv[2]?.trim();
+const arg = process.argv.at(2)?.trim();
 let target = "src";
 if (arg) {
   const abs = isAbsolute(arg) ? arg : resolve(process.cwd(), arg);
@@ -37,9 +52,9 @@ if (error) {
   process.exit(1);
 }
 
-const raw = stdout ?? "";
+const raw = stdout;
 const brace = raw.indexOf("{");
-let report;
+let report: DepcruiseReport;
 try {
   report = JSON.parse(raw.slice(brace));
 } catch {
@@ -48,7 +63,7 @@ try {
   process.exit(status && status !== 0 ? status : 1);
 }
 
-function severityLabel(s) {
+function severityLabel(s: string | undefined): string {
   if (s === "warn") return "warning";
   if (s === "info") return "info";
   return "error";

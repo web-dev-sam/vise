@@ -20,7 +20,7 @@
     {
       "label": "check file",
       "type": "shell",
-      "command": "node scripts/depcruise-vscode.mjs \"${file}\"",
+      "command": "node scripts/depcruise-vscode.ts \"${file}\"",
       "icon": {
         "id": "shield",
         "color": "terminal.ansiYellow"
@@ -49,7 +49,7 @@
     {
       "label": "check all",
       "type": "shell",
-      "command": "node scripts/depcruise-vscode.mjs",
+      "command": "node scripts/depcruise-vscode.ts",
       "icon": {
         "id": "verified",
         "color": "terminal.ansiYellow"
@@ -76,7 +76,7 @@
     {
       "label": "graph",
       "type": "shell",
-      "command": "node scripts/depcruise-focus.mjs \"${file}\"",
+      "command": "node scripts/depcruise-focus.ts \"${file}\"",
       "icon": {
         "id": "type-hierarchy",
         "color": "terminal.ansiYellow"

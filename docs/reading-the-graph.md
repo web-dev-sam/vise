@@ -15,7 +15,7 @@ and rendered to SVG with a wasm graphviz — no system tooling required.
 | You want                                       | Run                                                                      | Output                        |
 | ---------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
 | The **whole** app (the hero shape)             | `node scripts/render-graph.ts`                                           | `docs/architecture-graph.svg` |
-| A graph **focused on the file you're editing** | the **graph** VS Code task, or `node scripts/depcruise-focus.mjs <path>` | opens a focused SVG           |
+| A graph **focused on the file you're editing** | the **graph** VS Code task, or `node scripts/depcruise-focus.ts <path>`  | opens a focused SVG           |
 
 The focused graph shows the target file plus its immediate neighbourhood — what it
 imports and what imports it — with `node_modules` excluded so only _your_ modules

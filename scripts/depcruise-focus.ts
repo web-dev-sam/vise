@@ -13,7 +13,7 @@ import { instance } from "@viz-js/viz";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = join(repoRoot, "apps", "web");
 
-const arg = process.argv[2]?.trim();
+const arg = process.argv.at(2)?.trim();
 if (!arg) {
   console.error("graph: no file given — open a file under apps/web/src and run the task again.");
   process.exit(1);
@@ -46,7 +46,7 @@ const { status, stdout } = spawnSync(
   { cwd: appDir, encoding: "utf8", maxBuffer: 128 * 1024 * 1024 },
 );
 
-const raw = stdout ?? "";
+const raw = stdout;
 const start = raw.search(/(strict\s+)?digraph/);
 if (start < 0) {
   console.error("graph: dependency-cruiser did not emit a DOT graph.");

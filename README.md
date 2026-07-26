@@ -38,7 +38,7 @@ answer, not an argument. Boundaries are checked in CI, not in code review.
 ## See the boundaries
 
 Three focused dependency graphs, each rendered by the `graph` task
-(`node scripts/depcruise-focus.mjs <file>`). The first two show the healthy shape —
+(`node scripts/depcruise-focus.ts <file>`). The first two show the healthy shape —
 every arrow points toward stability, cross-slice traffic pinched through each silo's
 public `index.ts`; the third shows what a boundary break looks like.
 

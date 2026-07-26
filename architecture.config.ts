@@ -161,7 +161,7 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
     // and never touch the boundary rules above (a different, merged rule set).
     {
       // Build/config entrypoints must default-export their config object.
-      files: ["**/*.config.*", "**/plopfile.mjs"],
+      files: ["**/*.config.*", "**/plopfile.ts"],
       rules: { "import/no-default-export": "off" },
     },
     {

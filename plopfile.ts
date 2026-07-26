@@ -255,7 +255,38 @@ export function {{camelCase name}}(value: string): string {
 const WIRE_REMINDER = () =>
   "Next: import the new module where you use it — the no-orphans check flags files nothing references yet.";
 
-export default function (plop) {
+type PlopAnswers = Record<string, unknown>;
+
+interface PlopActionObject {
+  readonly type: string;
+  readonly path: string;
+  readonly template?: string;
+  readonly pattern?: RegExp;
+}
+
+type PlopAction = PlopActionObject | (() => string);
+
+interface PlopPrompt {
+  readonly type: string;
+  readonly name: string;
+  readonly message: string;
+  readonly choices?: readonly string[];
+  readonly default?: boolean;
+  readonly validate?: (value: unknown) => boolean | string;
+  readonly when?: (answers: PlopAnswers) => boolean;
+}
+
+interface PlopGenerator {
+  readonly description: string;
+  readonly prompts: readonly PlopPrompt[];
+  readonly actions: readonly PlopAction[] | ((answers: PlopAnswers) => readonly PlopAction[]);
+}
+
+interface PlopApi {
+  readonly setGenerator: (name: string, config: PlopGenerator) => void;
+}
+
+export default function (plop: PlopApi): void {
   // =========================================================================
   // new slice
   // =========================================================================
@@ -435,7 +466,7 @@ export default function (plop) {
         ];
       }
 
-      const base = `apps/web/src/slices/${answers.scope}`;
+      const base = `apps/web/src/slices/${String(answers.scope)}`;
       if (answers.deleteVue) {
         return [
           { type: "add", path: `${base}/core/{{camelCase name}}.ts`, template: CORE_FILE },
