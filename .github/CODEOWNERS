@@ -5,6 +5,7 @@
 # Replace @your-org/architecture with your real team handle.
 
 /architecture.config.ts                                   @your-org/architecture
+/architecture.oxlint-plugin.ts                            @your-org/architecture
 /vite.config.ts                                           @your-org/architecture
 /apps/web/tsconfig.json                                   @your-org/architecture
 /apps/web/.dependency-cruiser.cjs                         @your-org/architecture

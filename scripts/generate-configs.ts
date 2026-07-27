@@ -29,8 +29,9 @@ const depcruise = {
 
 const oxlint = {
   $schema: "./node_modules/oxlint/configuration_schema.json",
-  ...buildOxlintBaseConfig(),
-  overrides: buildOxlintOverrides(""),
+  // Specifier resolved from apps/web (where .oxlintrc.json lives).
+  ...buildOxlintBaseConfig("../../architecture.oxlint-plugin.ts"),
+  overrides: buildOxlintOverrides(),
 };
 
 const write = (name: string, value: unknown): void => {

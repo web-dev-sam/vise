@@ -33,7 +33,7 @@ Every rule, the tool that enforces it, and the command that checks it. All at
 | `core/` never imports `data/`/`ui/`                                 | dependency-cruiser `layers-point-down`             | `arch:depcruise`                           |
 | `data/` never imports `ui/`                                         | dependency-cruiser `data-not-to-ui`                | `arch:depcruise`                           |
 | `core/` is framework-free (npm allow-list)                          | dependency-cruiser `core-is-framework-free`        | `arch:depcruise`                           |
-| `core/` imports no `vue`/`pinia`/relative-down                      | Oxlint `no-restricted-imports`                     | `vp lint`                                  |
+| Every import-edge rule above, in the fast inner loop                | Oxlint `architecture/no-invalid-import` (shares the rule set) | `vp lint`                                  |
 | DTOs never escape `data/`                                           | dependency-cruiser `dtos-stay-home`                | `arch:depcruise`                           |
 | `shared/` imports no slice/app                                      | dependency-cruiser `shared-knows-nothing` + Oxlint | `arch:depcruise` / `vp lint`               |
 | `app/` is imported by nobody                                        | dependency-cruiser `app-is-a-leaf`                 | `arch:depcruise`                           |
@@ -57,10 +57,16 @@ Every rule, the tool that enforces it, and the command that checks it. All at
 | No inline boundary-rule disable comments                            | `scripts/check-no-disable-comments.ts`             | `arch:no-disable`                          |
 | Every rule above actually bites                                     | `scripts/verify-enforcement.ts`                    | `verify:enforcement`                       |
 
-`architecture.config.ts` is the single source of truth: the Oxlint overrides
-(consumed by `vp lint`) and the dependency-cruiser rules (emitted to
-`apps/web/.dependency-cruiser.generated.json` + `.oxlintrc.json`) are both derived
-from it, and a Vitest test fails if they ever drift.
+`architecture.config.ts` is the single source of truth. The import-boundary rules
+live there once, as the dependency-cruiser forbidden + allowed rule set. Both
+enforcers read that one set: dependency-cruiser interprets it natively (and owns
+the graph-global rules — cycles, orphans, transitive reach), while the Oxlint
+plugin `architecture/no-invalid-import` (`architecture.oxlint-plugin.ts`) resolves
+each import and asks `classifyImport()`, which re-implements dependency-cruiser's
+matching over the SAME objects — so `vp lint` never has to run the (slow)
+dependency-cruiser to answer "is this one import legal?", and the two can't drift.
+A Vitest test regenerates the committed configs and pins `classifyImport()` to the
+rule set.
 
 ## Checking locally
 

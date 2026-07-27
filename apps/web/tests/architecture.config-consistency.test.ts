@@ -21,12 +21,12 @@ describe("generated configs match the single source of truth", () => {
     expect(committed).toEqual({ forbidden: buildForbiddenRules(), allowed: buildAllowedRules() });
   });
 
-  it("oxlint overrides are up to date", () => {
+  it("oxlint config is up to date", () => {
     const committed = readJson(".oxlintrc.json");
     expect(committed).toEqual({
       $schema: "./node_modules/oxlint/configuration_schema.json",
-      ...buildOxlintBaseConfig(),
-      overrides: buildOxlintOverrides(""),
+      ...buildOxlintBaseConfig("../../architecture.oxlint-plugin.ts"),
+      overrides: buildOxlintOverrides(),
     });
   });
 });

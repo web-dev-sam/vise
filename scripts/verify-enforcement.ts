@@ -159,13 +159,35 @@ const cases: readonly EnforcementCase[] = [
     ],
   },
   {
-    rule: "oxlint no-restricted-imports (core/ importing vue)",
+    rule: "oxlint architecture/no-invalid-import — core-is-framework-free (core/ importing vue)",
     checker: "oxlint",
-    expect: /no-restricted-imports/,
+    expect: /no-invalid-import.*core-is-framework-free/,
     files: [
       {
         path: "slices/billing/core/__violation.ts",
         content: `import { ref } from "vue";\nexport const x = ref(0);\n`,
+      },
+    ],
+  },
+  {
+    rule: "oxlint architecture/no-invalid-import — slice-isolation (billing/ui importing scheduling/core)",
+    checker: "oxlint",
+    expect: /no-invalid-import.*slice-isolation/,
+    files: [
+      {
+        path: "slices/billing/ui/__violation.ts",
+        content: `import { findConflicts } from "../../scheduling/core/rules";\nexport const x = findConflicts;\n`,
+      },
+    ],
+  },
+  {
+    rule: "oxlint architecture/no-invalid-import — not-in-allowed (app importing slice internals)",
+    checker: "oxlint",
+    expect: /no-invalid-import.*not-in-allowed/,
+    files: [
+      {
+        path: "app/__violation.ts",
+        content: `import { fetchInvoices } from "../slices/billing/data/queries";\nexport const x = fetchInvoices;\n`,
       },
     ],
   },

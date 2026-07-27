@@ -8,14 +8,19 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildForbiddenRules } from "../architecture.config.ts";
+import {
+  ARCH_IMPORT_RULE,
+  ARCH_IMPORT_RULE_ID,
+  buildForbiddenRules,
+} from "../architecture.config.ts";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const srcDir = join(repoRoot, "apps", "web", "src");
 
 const boundaryRuleNames = [
   ...buildForbiddenRules().map((rule) => rule.name),
-  "no-restricted-imports",
+  ARCH_IMPORT_RULE,
+  ARCH_IMPORT_RULE_ID,
 ];
 const disableToken = /(oxlint|eslint)-disable|dependency-cruiser-ignore/;
 

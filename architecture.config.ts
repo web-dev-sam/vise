@@ -1,15 +1,22 @@
 /**
  * architecture.config.ts — THE SINGLE SOURCE OF TRUTH for the enforced architecture.
  *
- * Two things read this file so the two linters can never disagree:
- *   1. The root `vite.config.ts` imports `buildOxlintOverrides()` to build the
- *      `lint.overrides` that `vp lint` (Oxlint) enforces — the fast inner loop.
- *   2. `scripts/generate-configs.ts` imports the builders to emit
- *      `apps/web/.dependency-cruiser.generated.json` (rules for the load-bearing
- *      dependency-cruiser pass) and `apps/web/.oxlintrc.json` (IDE/parity copy).
+ * The import-boundary rules live here ONCE, as the dependency-cruiser forbidden +
+ * allowed rule objects (buildForbiddenRules/buildAllowedRules). Both enforcers
+ * read that one rule set:
+ *   1. dependency-cruiser interprets it natively — the load-bearing CI pass that
+ *      also owns the graph-global rules (cycles, orphans, transitive reach).
+ *   2. The Oxlint plugin (architecture.oxlint-plugin.ts) resolves each import to
+ *      a module path and asks classifyImport() — which re-implements
+ *      dependency-cruiser's matching over the SAME objects — so the fast inner
+ *      loop (`vp lint`) never encodes different rules and never has to run the
+ *      (slow) dependency-cruiser just to answer "is this one import legal?".
  *
- * A Vitest test (`tests/architecture.config-consistency.test.ts`) re-runs the
- * generators and fails if the committed artifacts drift from this file.
+ * `scripts/generate-configs.ts` emits apps/web/.dependency-cruiser.generated.json
+ * and apps/web/.oxlintrc.json from the builders here; a Vitest test
+ * (tests/architecture.config-consistency.test.ts) re-runs the generators and
+ * fails if the committed artifacts drift. tests/architecture.edges.test.ts pins
+ * classifyImport() to the rule set.
  *
  * CHANGING THIS FILE CHANGES THE ARCHITECTURE. See CODEOWNERS.
  */
@@ -62,28 +69,23 @@ export const coreImpurityTokens = [
 ] as const;
 
 /* -------------------------------------------------------------------------- */
-/* Helper-question messages — every restriction explains WHY, as a question.  */
+/* The custom Oxlint plugin that enforces the import boundaries in the fast    */
+/* inner loop. `vp lint` loads architecture.oxlint-plugin.ts via `jsPlugins`;   */
+/* the rule key below (added to every file's rule set) turns it on.            */
 /* -------------------------------------------------------------------------- */
 
-export const MSG = {
-  coreFrameworkFree:
-    "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/.",
-  coreReachDown:
-    "Dependencies point toward stability. core/ may not import data/ or ui/ — put the pure rule in core/ and let the outer layers call it.",
-  coreCrossSlice:
-    "What business reason would make this change? core/ is a silo: it never reaches another slice. Cross-slice access is an app-level or ui-level concern via @slices/<slice>.",
-  sharedNoDomain:
-    "Does this know about a specific domain? Then it is not shared. shared/ holds zero domain knowledge and never imports a slice or the app (rule 7).",
-  climbOutOfSlice:
-    "Are you reaching sideways? Cross-slice access goes through the slice's public index.ts via the @slices/<slice> alias, never a relative path that climbs out of the slice.",
-  appIsLeaf:
-    "The app is the composition root: it is imported by nobody. Move shared code down into a slice or shared/.",
-} as const;
+export const ARCH_PLUGIN_NAME = "architecture";
+export const ARCH_IMPORT_RULE_ID = "no-invalid-import";
+export const ARCH_IMPORT_RULE = `${ARCH_PLUGIN_NAME}/${ARCH_IMPORT_RULE_ID}`;
 
 /* -------------------------------------------------------------------------- */
-/* Oxlint: per-folder no-restricted-imports overrides.                        */
-/* Oxlint does NOT merge `no-restricted-imports` across overrides — each       */
-/* override restates its full list. Generating them removes that footgun.      */
+/* Oxlint: file-TYPE exemptions layered UNDER the boundary rule. These turn    */
+/* off source-oriented rules that are inherently incompatible with a file's    */
+/* kind (config default-exports, .cjs require(), the JS plugin's default        */
+/* export). The import BOUNDARIES themselves are enforced by the               */
+/* `architecture/no-invalid-import` plugin rule (architecture.oxlint-plugin.ts) */
+/* over the shared rule set — NOT by per-folder no-restricted-imports globs,    */
+/* which were a second, drift-prone encoding of the dependency-cruiser rules.   */
 /* -------------------------------------------------------------------------- */
 
 export interface OxlintOverride {
@@ -91,81 +93,25 @@ export interface OxlintOverride {
   rules: Record<string, unknown>;
 }
 
-const FRAMEWORK_SPECIFIERS = ["vue", "vue-router", "pinia"];
-const FRAMEWORK_PATTERNS = ["@vue/*", "**/*.vue", "*.vue"];
-
-/**
- * @param base a workspace-relative prefix, e.g. "apps/web/" for the root
- *   vite.config, or "" for a `.oxlintrc.json` that lives inside the app.
- */
-export function buildOxlintOverrides(base = ""): OxlintOverride[] {
-  const withBase = (glob: string) => `${base}${glob}`;
-  const climbOut = {
-    group: ["**/slices/*/core/**", "**/slices/*/data/**", "**/slices/*/ui/**"],
-    message: MSG.climbOutOfSlice,
-  };
-  // Oxlint does NOT merge no-restricted-imports across overrides: the LAST
-  // matching override wins and replaces the rule wholesale. So overrides are
-  // ordered least → most specific, and each one RESTATES every pattern it needs.
+export function buildOxlintOverrides(): OxlintOverride[] {
+  // Unprefixed **/ globs so each entry matches at either lint root (repo root
+  // for `vp lint`, apps/web for .oxlintrc.json) and touches only file TYPES,
+  // never the boundary rule (a different, merged rule set).
   return [
-    // Repo-wide: never reach into a slice's internals via a relative path.
+    // Build/config entrypoints must default-export their config object.
     {
-      files: [withBase("src/**/*")],
-      rules: {
-        "no-restricted-imports": ["error", { patterns: [climbOut] }],
-      },
-    },
-    // shared/: zero domain knowledge, never imports a slice or the app.
-    {
-      files: [withBase("src/shared/**/*")],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            patterns: [
-              {
-                group: ["**/slices/**", "**/app/**", "@slices/*", "@app/*"],
-                message: MSG.sharedNoDomain,
-              },
-            ],
-          },
-        ],
-      },
-    },
-    // core/: framework-free AND may not reach down or sideways. Most specific,
-    // so it comes last and wins for files under slices/*/core.
-    {
-      files: [withBase("src/slices/*/core/**/*")],
-      rules: {
-        "no-restricted-imports": [
-          "error",
-          {
-            paths: FRAMEWORK_SPECIFIERS.map((name) => ({ name, message: MSG.coreFrameworkFree })),
-            patterns: [
-              { group: FRAMEWORK_PATTERNS, message: MSG.coreFrameworkFree },
-              {
-                group: ["**/data/**", "**/ui/**", "../data/*", "../ui/*"],
-                message: MSG.coreReachDown,
-              },
-              { group: ["@slices/*", "@app/*"], message: MSG.coreCrossSlice },
-              { group: ["@shared/ui/*", "@shared/http/*"], message: MSG.coreFrameworkFree },
-              climbOut,
-            ],
-          },
-        ],
-      },
-    },
-    // Tooling & generated files: exempt the source-oriented rules that are
-    // inherently incompatible with each file TYPE. Unprefixed **/ globs so they
-    // match at either root (repo root for `vp lint`, apps/web for .oxlintrc.json)
-    // and never touch the boundary rules above (a different, merged rule set).
-    {
-      // Build/config entrypoints must default-export their config object.
       files: ["**/*.config.*", "**/plopfile.ts"],
       rules: { "import/no-default-export": "off" },
     },
+    // The architecture Oxlint plugin: a plugin is loaded via its default export,
+    // and Node's ESM loader needs the explicit `.ts` on its sibling import of
+    // this config — both at odds with the source-oriented import rules.
     {
-      // CommonJS modules (.cjs) legitimately use require()/module.exports.
+      files: ["**/architecture.oxlint-plugin.ts"],
+      rules: { "import/no-default-export": "off", "import/extensions": "off" },
+    },
+    // CommonJS modules (.cjs) legitimately use require()/module.exports.
+    {
       files: ["**/*.cjs"],
       rules: {
         "import/no-commonjs": "off",
@@ -175,14 +121,14 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
         "typescript/no-var-requires": "off",
       },
     },
+    // Node-run tooling & tests import sibling .ts files WITH the extension
+    // (Node's ESM resolver / type-stripping needs it); `never` can't apply.
     {
-      // Node-run tooling & tests import sibling .ts files WITH the extension
-      // (Node's ESM resolver / type-stripping needs it); `never` can't apply.
       files: ["**/scripts/**", "**/tests/**"],
       rules: { "import/extensions": "off" },
     },
+    // Generated MSW worker: vendored, keeps its blanket eslint-disable header.
     {
-      // Generated MSW worker: vendored, keeps its blanket eslint-disable header.
       files: ["**/mockServiceWorker.js"],
       rules: { "unicorn/no-abusive-eslint-disable": "off" },
     },
@@ -190,10 +136,10 @@ export function buildOxlintOverrides(base = ""): OxlintOverride[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Oxlint: the shared rule baseline applied to EVERY js/ts/vue file, layered   */
-/* on top of the architecture-boundary overrides above. Lives here (the single */
-/* source of truth) so `.oxlintrc.json` (IDE) and vite.config.ts (`vp lint`)   */
-/* can never drift.                                                            */
+/* Oxlint: the shared rule baseline applied to EVERY js/ts/vue file, on top of  */
+/* the file-type exemptions above and the architecture/no-invalid-import plugin  */
+/* rule. Lives here (the single source of truth) so `.oxlintrc.json` (IDE) and   */
+/* vite.config.ts (`vp lint`) can never drift.                                  */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -305,7 +251,7 @@ export const oxlintRules: OxlintRuleMap = {
   // "import/no-relative-parent-imports": "error", // conflicts with the slice
   //   architecture: intra-slice relative imports (../core, ../components) are the
   //   sanctioned pattern, and climbing OUT of a slice is already blocked by the
-  //   per-folder no-restricted-imports overrides above.
+  //   architecture/no-invalid-import plugin rule (slice-isolation / not-in-allowed).
   "import/no-unassigned-import": ["error", { allow: ["**/*.css"] }],
   "import/no-mutable-exports": "error",
   "import/no-dynamic-require": "error",
@@ -354,18 +300,30 @@ export const oxlintRules: OxlintRuleMap = {
   "unicorn/require-array-join-separator": "error",
 };
 
+export interface OxlintJsPlugin {
+  name: string;
+  specifier: string;
+}
+
 export interface OxlintBaseConfig {
   plugins: string[];
+  jsPlugins: OxlintJsPlugin[];
   categories: Record<string, OxlintSeverity>;
   rules: OxlintRuleMap;
 }
 
-/** A fresh copy of the shared Oxlint baseline for each consumer. */
-export function buildOxlintBaseConfig(): OxlintBaseConfig {
+/**
+ * A fresh copy of the shared Oxlint baseline for each consumer. `pluginSpecifier`
+ * is how that consumer imports architecture.oxlint-plugin.ts: "./architecture.
+ * oxlint-plugin.ts" from the repo-root vite.config, "../../architecture.oxlint-
+ * plugin.ts" from apps/web/.oxlintrc.json.
+ */
+export function buildOxlintBaseConfig(pluginSpecifier: string): OxlintBaseConfig {
   return {
     plugins: [...oxlintPlugins],
+    jsPlugins: [{ name: ARCH_PLUGIN_NAME, specifier: pluginSpecifier }],
     categories: { ...oxlintCategories },
-    rules: { ...oxlintRules },
+    rules: { ...oxlintRules, [ARCH_IMPORT_RULE]: "error" },
   };
 }
 
@@ -532,4 +490,159 @@ export function buildAllowedRules(): (Pick<DepcruiseRule, "from" | "to"> & { com
     // shared may only build on itself.
     { comment: "shared -> shared", from: { path: "^src/shared/" }, to: { path: "^src/shared/" } },
   ];
+}
+
+/* -------------------------------------------------------------------------- */
+/* The shared edge evaluator — the ONE decision procedure behind both linters. */
+/* dependency-cruiser interprets the forbidden + allowed objects above natively */
+/* (and owns the graph-global rules). The Oxlint plugin can't run it per-        */
+/* keystroke, so it resolves each import to a module path and calls             */
+/* classifyImport(), which re-implements dependency-cruiser's matching over the  */
+/* SAME objects. One rule set, one matcher, no drift.                           */
+/*                                                                              */
+/* Graph-global rules (circular / orphan / reachable) need the whole module     */
+/* graph and are NOT edge-decidable; classifyImport() skips them and they stay   */
+/* dependency-cruiser's job (cycles are also caught by Oxlint's import/no-cycle).*/
+/* -------------------------------------------------------------------------- */
+
+/** A module as the evaluator sees it: a repo-relative path (to apps/web, forward
+ *  slashes) plus dependency-cruiser dependencyTypes. npm imports use a synthetic
+ *  "node_modules/<pkg>/" path so the npm-oriented rules match by path too. */
+export interface ModuleDescriptor {
+  path: string;
+  dependencyTypes: readonly string[];
+}
+
+export interface EdgeVerdict {
+  ok: boolean;
+  /** Set when ok is false: a forbidden rule name, or NOT_IN_ALLOWED. */
+  rule?: string;
+  /** The rationale to surface (the forbidden rule's comment). */
+  comment?: string;
+}
+
+/** The verdict rule for an edge that matches no rule in the closed allow-list. */
+export const NOT_IN_ALLOWED = "not-in-allowed";
+const NOT_IN_ALLOWED_COMMENT =
+  "This import matches no allowed edge in the sliced architecture; the graph is a closed allow-list. See docs/enforcement.md.";
+
+type Condition = Record<string, unknown>;
+
+const regexpCache = new Map<string, RegExp>();
+function compile(source: string): RegExp {
+  let regexp = regexpCache.get(source);
+  if (regexp === undefined) {
+    regexp = new RegExp(source);
+    regexpCache.set(source, regexp);
+  }
+  return regexp;
+}
+
+function asPatterns(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value))
+    return value.filter((entry): entry is string => typeof entry === "string");
+  return [];
+}
+
+function asDependencyTypes(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+/** Substitute dependency-cruiser $1..$9 back-references (captured from the paired
+ *  `from.path` match) into a `to` pattern before testing it. */
+function substitute(pattern: string, groups: RegExpExecArray | null): string {
+  if (groups === null) return pattern;
+  return pattern.replace(/\$([1-9])/g, (_match, digit: string) => groups[Number(digit)] ?? "");
+}
+
+interface FromMatch {
+  matched: boolean;
+  groups: RegExpExecArray | null;
+}
+
+function matchFrom(condition: Condition, descriptor: ModuleDescriptor): FromMatch {
+  let groups: RegExpExecArray | null = null;
+  if (typeof condition.path === "string") {
+    groups = compile(condition.path).exec(descriptor.path);
+    if (groups === null) return { matched: false, groups: null };
+  }
+  for (const pattern of asPatterns(condition.pathNot)) {
+    if (compile(pattern).test(descriptor.path)) return { matched: false, groups: null };
+  }
+  const depTypes = asDependencyTypes(condition.dependencyTypes);
+  if (depTypes.length > 0 && !depTypes.some((type) => descriptor.dependencyTypes.includes(type))) {
+    return { matched: false, groups: null };
+  }
+  return { matched: true, groups };
+}
+
+function matchTo(
+  condition: Condition,
+  descriptor: ModuleDescriptor,
+  groups: RegExpExecArray | null,
+): boolean {
+  if (
+    typeof condition.path === "string" &&
+    !compile(substitute(condition.path, groups)).test(descriptor.path)
+  ) {
+    return false;
+  }
+  for (const pattern of asPatterns(condition.pathNot)) {
+    if (compile(substitute(pattern, groups)).test(descriptor.path)) return false;
+  }
+  const depTypes = asDependencyTypes(condition.dependencyTypes);
+  if (depTypes.length > 0 && !depTypes.some((type) => descriptor.dependencyTypes.includes(type))) {
+    return false;
+  }
+  return true;
+}
+
+function isEdgeDecidable(rule: Pick<DepcruiseRule, "from" | "to">): boolean {
+  // A rule is edge-decidable unless either side keys on a graph-global attribute
+  // (circular / reachable / orphan) that a single import can't answer.
+  for (const condition of [rule.from, rule.to]) {
+    if ("circular" in condition || "reachable" in condition || "orphan" in condition) return false;
+  }
+  return true;
+}
+
+interface CompiledRuleset {
+  forbidden: DepcruiseRule[];
+  allowed: (Pick<DepcruiseRule, "from" | "to"> & { comment?: string })[];
+}
+
+let compiledRuleset: CompiledRuleset | null = null;
+function ruleset(): CompiledRuleset {
+  compiledRuleset ??= {
+    forbidden: buildForbiddenRules().filter((rule) => isEdgeDecidable(rule)),
+    allowed: buildAllowedRules(),
+  };
+  return compiledRuleset;
+}
+
+/**
+ * Decide whether one import edge (from → to) is legal, using the SAME forbidden +
+ * allowed rule objects dependency-cruiser consumes. Forbidden rules win first (a
+ * specific violation); otherwise the edge must match the closed allow-list or it
+ * is NOT_IN_ALLOWED. Mirrors dependency-cruiser's allow-list mode for every
+ * edge-decidable rule.
+ */
+export function classifyImport(from: ModuleDescriptor, to: ModuleDescriptor): EdgeVerdict {
+  const { forbidden, allowed } = ruleset();
+  for (const rule of forbidden) {
+    const fromMatch = matchFrom(rule.from, from);
+    if (fromMatch.matched && matchTo(rule.to, to, fromMatch.groups)) {
+      return { ok: false, rule: rule.name, comment: rule.comment };
+    }
+  }
+  for (const rule of allowed) {
+    const fromMatch = matchFrom(rule.from, from);
+    if (fromMatch.matched && matchTo(rule.to, to, fromMatch.groups)) {
+      return { ok: true };
+    }
+  }
+  return { ok: false, rule: NOT_IN_ALLOWED, comment: NOT_IN_ALLOWED_COMMENT };
 }

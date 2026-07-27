@@ -8,6 +8,12 @@
     "import",
     "vue"
   ],
+  "jsPlugins": [
+    {
+      "name": "architecture",
+      "specifier": "../../architecture.oxlint-plugin.ts"
+    }
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -157,121 +163,10 @@
     "unicorn/prefer-keyboard-event-key": "error",
     "unicorn/prefer-negative-index": "error",
     "unicorn/prefer-string-trim-start-end": "error",
-    "unicorn/require-array-join-separator": "error"
+    "unicorn/require-array-join-separator": "error",
+    "architecture/no-invalid-import": "error"
   },
   "overrides": [
-    {
-      "files": [
-        "src/**/*"
-      ],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "**/slices/*/core/**",
-                  "**/slices/*/data/**",
-                  "**/slices/*/ui/**"
-                ],
-                "message": "Are you reaching sideways? Cross-slice access goes through the slice's public index.ts via the @slices/<slice> alias, never a relative path that climbs out of the slice."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": [
-        "src/shared/**/*"
-      ],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "group": [
-                  "**/slices/**",
-                  "**/app/**",
-                  "@slices/*",
-                  "@app/*"
-                ],
-                "message": "Does this know about a specific domain? Then it is not shared. shared/ holds zero domain knowledge and never imports a slice or the app (rule 7)."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": [
-        "src/slices/*/core/**/*"
-      ],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "paths": [
-              {
-                "name": "vue",
-                "message": "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/."
-              },
-              {
-                "name": "vue-router",
-                "message": "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/."
-              },
-              {
-                "name": "pinia",
-                "message": "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/."
-              }
-            ],
-            "patterns": [
-              {
-                "group": [
-                  "@vue/*",
-                  "**/*.vue",
-                  "*.vue"
-                ],
-                "message": "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/."
-              },
-              {
-                "group": [
-                  "**/data/**",
-                  "**/ui/**",
-                  "../data/*",
-                  "../ui/*"
-                ],
-                "message": "Dependencies point toward stability. core/ may not import data/ or ui/ — put the pure rule in core/ and let the outer layers call it."
-              },
-              {
-                "group": [
-                  "@slices/*",
-                  "@app/*"
-                ],
-                "message": "What business reason would make this change? core/ is a silo: it never reaches another slice. Cross-slice access is an app-level or ui-level concern via @slices/<slice>."
-              },
-              {
-                "group": [
-                  "@shared/ui/*",
-                  "@shared/http/*"
-                ],
-                "message": "Would this still make sense if you deleted Vue tomorrow? core/ is framework-free: reactivity is a UI concern and fetch is a data concern. Move this to ui/ or data/."
-              },
-              {
-                "group": [
-                  "**/slices/*/core/**",
-                  "**/slices/*/data/**",
-                  "**/slices/*/ui/**"
-                ],
-                "message": "Are you reaching sideways? Cross-slice access goes through the slice's public index.ts via the @slices/<slice> alias, never a relative path that climbs out of the slice."
-              }
-            ]
-          }
-        ]
-      }
-    },
     {
       "files": [
         "**/*.config.*",
@@ -279,6 +174,15 @@
       ],
       "rules": {
         "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": [
+        "**/architecture.oxlint-plugin.ts"
+      ],
+      "rules": {
+        "import/no-default-export": "off",
+        "import/extensions": "off"
       }
     },
     {

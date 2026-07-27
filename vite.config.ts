@@ -1,8 +1,12 @@
 import { defineConfig } from "vite-plus";
-import { APP_DIR, buildOxlintBaseConfig, buildOxlintOverrides } from "./architecture.config";
+import { buildOxlintBaseConfig, buildOxlintOverrides } from "./architecture.config";
 
-// Oxlint boundary rules are generated from architecture.config.ts (the single
-// source of truth) so `vp lint` and dependency-cruiser can never disagree.
+// Oxlint config is built from architecture.config.ts (the single source of
+// truth). The import boundaries are enforced by the `architecture/no-invalid-import`
+// plugin rule (architecture.oxlint-plugin.ts), which reads the SAME forbidden +
+// allowed rule set dependency-cruiser does — so `vp lint` and dependency-cruiser
+// can never disagree. The specifier below is resolved from the repo root, where
+// `vp lint` runs.
 //
 // Type-aware lint is ON so the enforced `vp lint` (CI + the staged pre-commit
 // hook) fails on exactly what the editor's type-aware Oxlint flags — no error
@@ -13,9 +17,9 @@ export default defineConfig({
     "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}": "vp lint --fix",
   },
   lint: {
-    ...buildOxlintBaseConfig(),
+    ...buildOxlintBaseConfig("./architecture.oxlint-plugin.ts"),
     options: { typeAware: true, typeCheck: false },
-    overrides: buildOxlintOverrides(`${APP_DIR}/`),
+    overrides: buildOxlintOverrides(),
   },
   fmt: {
     tabWidth: 2,
